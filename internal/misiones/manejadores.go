@@ -33,18 +33,25 @@ func (m *Manejador) crear(w http.ResponseWriter, r *http.Request) {
 
 	mision.ID = 0
 
-	// Validar estado (422)
+	// 1. Validar estado (422)
 	if !estadosValidos[mision.Estado] {
 		respuesta.Error(w, http.StatusUnprocessableEntity, "estado_invalido", "Estado no válido")
 		return
 	}
 
-	// Regla extra de negocio (422)
+	// 2. Título requerido (422)
 	if mision.Titulo == "" {
 		respuesta.Error(w, http.StatusUnprocessableEntity, "titulo_requerido", "El título de la misión no puede estar vacío")
 		return
 	}
 
+	// 3. REGLA PROPIA DEL NEGOCIO (Double Level): Dificultad permitida (422)
+	if mision.Dificultad != "facil" && mision.Dificultad != "media" && mision.Dificultad != "dificil" {
+		respuesta.Error(w, http.StatusUnprocessableEntity, "dificultad_invalida", "La dificultad debe ser facil, media o dificil")
+		return
+	}
+
+	// *** AQUÍ EMPIEZA LA BASE DE DATOS *** (Línea 53)
 	if err := m.DB.Debug().Create(&mision).Error; err != nil {
 		respuesta.Error(w, http.StatusInternalServerError, "error_base", "No se pudo guardar la misión")
 		return
@@ -59,10 +66,6 @@ func (m *Manejador) listar(w http.ResponseWriter, r *http.Request) {
 
 	query := m.DB.Debug()
 
-	// Si Mision es la entidad con relación N, puedes usar Preload aquí con el nombre del campo del struct:
-	// query = query.Preload("Objetivos")
-
-	// Filtrar por estado de forma segura (Fase 2d)
 	if estado != "" {
 		query = query.Where("estado = ?", estado)
 	}
@@ -100,7 +103,6 @@ func (m *Manejador) actualizar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 1. Verificar si existe primero (devuelve 404 si no existe)
 	var existente Mision
 	if err := m.DB.First(&existente, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -111,14 +113,12 @@ func (m *Manejador) actualizar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 2. Leer nuevo JSON
 	var datosNuevos Mision
 	if err := json.NewDecoder(r.Body).Decode(&datosNuevos); err != nil {
 		respuesta.Error(w, http.StatusBadRequest, "json_invalido", "El cuerpo no es un JSON válido")
 		return
 	}
 
-	// 3. Validar estado y regla extra
 	if !estadosValidos[datosNuevos.Estado] {
 		respuesta.Error(w, http.StatusUnprocessableEntity, "estado_invalido", "Estado no válido")
 		return
@@ -129,9 +129,14 @@ func (m *Manejador) actualizar(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 4. Actualizar campos
+	if datosNuevos.Dificultad != "facil" && datosNuevos.Dificultad != "media" && datosNuevos.Dificultad != "dificil" {
+		respuesta.Error(w, http.StatusUnprocessableEntity, "dificultad_invalida", "La dificultad debe ser facil, media o dificil")
+		return
+	}
+
 	existente.Titulo = datosNuevos.Titulo
 	existente.Estado = datosNuevos.Estado
+	existente.Dificultad = datosNuevos.Dificultad
 
 	if err := m.DB.Debug().Save(&existente).Error; err != nil {
 		respuesta.Error(w, http.StatusInternalServerError, "error_base", "No se pudo actualizar la misión")
@@ -161,7 +166,6 @@ func (m *Manejador) borrar(w http.ResponseWriter, r *http.Request) {
 	respuesta.Exito(w, http.StatusOK, map[string]string{"mensaje": "Misión eliminada correctamente"})
 }
 
-// Auxiliar para extraer el ID de la URL
 func leerID(w http.ResponseWriter, r *http.Request) (uint, bool) {
 	n, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil || n <= 0 {

@@ -1,51 +1,46 @@
 package main
 
 import (
-	"flag"
 	"log"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	"github.com/uleam-web-2026-2/servA-Macias-Lago/internal/middleware"
-	"github.com/uleam-web-2026-2/servA-Macias-Lago/internal/misiones"
-	"github.com/uleam-web-2026-2/servA-Macias-Lago/internal/respuesta"
+	"double-level/internal/config"
+	"double-level/internal/misiones"
 )
 
 func main() {
-	reset := flag.Bool("reset", false, "borra las tablas y arranca con la base vacia")
-	flag.Parse()
-
-	// Conexión al puerto 5433 y a la BD Doublevel_db creada en Docker
-	dsn := "host=localhost port=5433 user=postgres password=postgres dbname=doublevel_db sslmode=disable"
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	cfg, err := config.Cargar()
 	if err != nil {
-		log.Fatalf("Error al conectar a la BD: %v", err)
+		log.Fatal("configuración: ", err)
 	}
 
-	if *reset {
-		db.Migrator().DropTable(&misiones.Mision{}, &misiones.Usuario{})
-	}
-
-	err = db.Debug().AutoMigrate(&misiones.Usuario{}, &misiones.Mision{})
+	db, err := gorm.Open(postgres.Open(cfg.DatabaseURL), &gorm.Config{})
 	if err != nil {
-		log.Fatalf("Error en AutoMigrate: %v", err)
+		log.Fatal("no se pudo conectar: ", err)
 	}
 
-	misiones.Sembrar(db)
+	if err := db.AutoMigrate(&misiones.Mision{}); err != nil {
+		log.Fatal("no se pudo migrar: ", err)
+	}
 
 	r := chi.NewRouter()
-	r.Use(middleware.Registro)
-	r.Use(middleware.Recuperacion)
-
-	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
-		respuesta.Error(w, http.StatusNotFound, "ruta_inexistente", "la ruta no existe")
-	})
+	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
 
 	(&misiones.Manejador{DB: db}).Rutas(r)
 
-	log.Println("Servidor escuchando en :8080")
-	log.Fatal(http.ListenAndServe(":8080", r))
+	servidor := &http.Server{
+		Addr:         ":" + cfg.Puerto,
+		Handler:      r,
+		ReadTimeout:  cfg.TiempoEspera,
+		WriteTimeout: cfg.TiempoEspera,
+	}
+
+	log.Println("escuchando en el puerto", cfg.Puerto)
+	log.Fatal(servidor.ListenAndServe())
 }

@@ -9,8 +9,8 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	"double-level/internal/config"
-	"double-level/internal/misiones"
+	"github.com/uleam-web-2026-2/servA-Macias-Lago/internal/config"
+	"github.com/uleam-web-2026-2/servA-Macias-Lago/internal/misiones"
 )
 
 func main() {

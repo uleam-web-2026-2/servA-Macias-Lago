@@ -281,4 +281,4 @@ stateDiagram-v2
 
 ## 8. Declaración de IA
 
-Se utilizó inteligencia artificial como asistente para estructurar la documentación en formato Markdown, validar la sintaxis de los diagramas Mermaid y dar formato adecuado a las estructuras en Go.
+Se utilizó inteligencia artificial como asistente para estructurar la documentación en formato Markdown, validar la sintaxis de los diagramas Mermaid y dar formato adecuado a las estructuras en Go. ChatGPT / Gemini para revisar la redacción de la sección 3 y el addendum

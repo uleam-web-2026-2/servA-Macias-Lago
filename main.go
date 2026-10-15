@@ -24,9 +24,18 @@ func main() {
 		log.Fatal("no se pudo conectar: ", err)
 	}
 
-	if err := db.AutoMigrate(&misiones.Mision{}); err != nil {
+	if err := db.AutoMigrate(
+		&misiones.Usuario{},
+		&misiones.Mision{},
+		&misiones.PaqueteGemas{},
+		&misiones.Pago{},
+		&misiones.Factura{},
+		&misiones.ConsumoGemas{},
+	); err != nil {
 		log.Fatal("no se pudo migrar: ", err)
 	}
+
+	misiones.Sembrar(db)
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)

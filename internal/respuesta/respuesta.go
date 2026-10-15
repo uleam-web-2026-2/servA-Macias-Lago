@@ -6,7 +6,7 @@ import (
 )
 
 type detalleError struct {
-	Codigo  string `json:"codigo"`
+	Codigo  string `json:"codigo,omitempty"`
 	Mensaje string `json:"mensaje"`
 }
 
@@ -26,6 +26,17 @@ func Exito(w http.ResponseWriter, estado int, datos any) {
 	escribir(w, estado, envoltura{OK: true, Datos: datos})
 }
 
-func Error(w http.ResponseWriter, estado int, codigo, mensaje string) {
-	escribir(w, estado, envoltura{OK: false, Error: &detalleError{Codigo: codigo, Mensaje: mensaje}})
+func JSON(w http.ResponseWriter, estado int, datos any) {
+	Exito(w, estado, datos)
+}
+
+func Error(w http.ResponseWriter, estado int, textos ...string) {
+	det := &detalleError{}
+	if len(textos) == 1 {
+		det.Mensaje = textos[0]
+	} else if len(textos) >= 2 {
+		det.Codigo = textos[0]
+		det.Mensaje = textos[1]
+	}
+	escribir(w, estado, envoltura{OK: false, Error: det})
 }

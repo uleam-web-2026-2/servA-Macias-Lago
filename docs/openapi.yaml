@@ -1,0 +1,247 @@
+openapi: 3.1.0
+info:
+  title: DoubleLevel
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+security:
+  - sesion: []
+paths:
+  /paquetes:
+    get:
+      operationId: listarPaquetes
+      summary: Lista los paquetes de gemas disponibles
+      security: []
+      responses:
+        "200":
+          description: Los paquetes de gemas disponibles
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/PaqueteGemas" }
+        "400": { $ref: "#/components/responses/Error400" }
+  /pagos:
+    get:
+      operationId: listarPagos
+      summary: Lista los pagos registrados
+      responses:
+        "200":
+          description: Los pagos (puede ser una lista vacía)
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Pago" }
+        "400": { $ref: "#/components/responses/Error400" }
+        "401": { $ref: "#/components/responses/Error401" }
+    post:
+      operationId: crearPago
+      summary: Registra un pago de paquete de gemas
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PagoNuevo" }
+      responses:
+        "201":
+          description: El pago creado
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Pago" }
+        "400": { $ref: "#/components/responses/Error400" }
+        "401": { $ref: "#/components/responses/Error401" }
+        "422": { $ref: "#/components/responses/Error422" }
+  /pagos/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer, minimum: 1 }
+    get:
+      operationId: verPago
+      summary: Devuelve un pago por su id
+      responses:
+        "200":
+          description: El pago
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Pago" }
+        "400": { $ref: "#/components/responses/Error400" }
+        "401": { $ref: "#/components/responses/Error401" }
+        "404": { $ref: "#/components/responses/Error404" }
+    patch:
+      operationId: cambiarEstadoPago
+      summary: Cambia el estado de un pago
+      responses:
+        "200":
+          description: El pago con su estado nuevo
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Pago" }
+        "400": { $ref: "#/components/responses/Error400" }
+        "401": { $ref: "#/components/responses/Error401" }
+        "403": { $ref: "#/components/responses/Error403" }
+        "404": { $ref: "#/components/responses/Error404" }
+        "422": { $ref: "#/components/responses/Error422" }
+    put:
+      operationId: modificarPago
+      summary: Modifica los datos de un pago (no su estado)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PagoNuevo" }
+      responses:
+        "200":
+          description: El pago modificado
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Pago" }
+        "400": { $ref: "#/components/responses/Error400" }
+        "401": { $ref: "#/components/responses/Error401" }
+        "404": { $ref: "#/components/responses/Error404" }
+        "422": { $ref: "#/components/responses/Error422" }
+    delete:
+      operationId: borrarPago
+      summary: Borra un pago
+      responses:
+        "204":
+          description: Borrado. No devuelve cuerpo
+        "400": { $ref: "#/components/responses/Error400" }
+        "401": { $ref: "#/components/responses/Error401" }
+        "404": { $ref: "#/components/responses/Error404" }
+  /login:
+    post:
+      operationId: iniciarSesion
+      summary: Entrega un token a cambio de usuario y contraseña
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [usuario, clave]
+              properties:
+                usuario: { type: string }
+                clave: { type: string }
+      responses:
+        "200":
+          description: El token de la sesión
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [token]
+                properties:
+                  token: { type: string }
+        "400": { $ref: "#/components/responses/Error400" }
+        "401": { $ref: "#/components/responses/Error401" }
+  /facturas:
+    get:
+      operationId: listarFacturas
+      summary: Lista las facturas electrónicas emitidas (plan)
+      responses:
+        "200":
+          description: Lista de facturas
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Factura" }
+        "401": { $ref: "#/components/responses/Error401" }
+  /consumos-gemas:
+    post:
+      operationId: registrarConsumoGemas
+      summary: Registra el gasto de gemas por un usuario (plan)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PagoNuevo" }
+      responses:
+        "201":
+          description: Consumo registrado
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Pago" }
+        "401": { $ref: "#/components/responses/Error401" }
+        "422": { $ref: "#/components/responses/Error422" }
+components:
+  securitySchemes:
+    sesion:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    EstadoPago:
+      type: string
+      enum: [pendiente, pago_por_verificar, completado, rechazado]
+    PaqueteGemas:
+      type: object
+      required: [id, nombre, precio, cantidad_gemas]
+      properties:
+        id: { type: integer, readOnly: true }
+        nombre: { type: string }
+        precio: { type: number }
+        cantidad_gemas: { type: integer }
+    Pago:
+      type: object
+      required: [id, usuario_id, paquete_gemas_id, monto, estado, fecha_creacion]
+      properties:
+        id: { type: integer, readOnly: true }
+        usuario_id: { type: integer }
+        paquete_gemas_id: { type: integer }
+        monto: { type: number }
+        estado: { $ref: "#/components/schemas/EstadoPago" }
+        comprobante_url: { type: string }
+        fecha_creacion: { type: string, format: date-time }
+    PagoNuevo:
+      type: object
+      required: [usuario_id, paquete_gemas_id, monto]
+      properties:
+        usuario_id: { type: integer }
+        paquete_gemas_id: { type: integer }
+        monto: { type: number }
+        comprobante_url: { type: string }
+    Factura:
+      type: object
+      required: [id, pago_id, identificacion, razon_social, fecha_emision]
+      properties:
+        id: { type: integer, readOnly: true }
+        pago_id: { type: integer }
+        identificacion: { type: string }
+        razon_social: { type: string }
+        fecha_emision: { type: string, format: date-time }
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string }
+  responses:
+    Error400:
+      description: El servidor no entendió la petición
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Error401:
+      description: No se sabe quién hace la petición
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Error403:
+      description: Se sabe quién es, pero su rol no puede hacer esto
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Error404:
+      description: No existe el elemento
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Error422:
+      description: Se entendió, pero un dato rompe una regla del negocio
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }

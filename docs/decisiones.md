@@ -12,7 +12,7 @@
 
 ### D1 · Si falta una variable al arrancar
 **Decisión:** `DATABASE_URL` es una variable obligatoria sin valor por defecto que detiene la ejecución si no está presente. `PUERTO` y `TIEMPO_ESPERA_SEGUNDOS` toman `8080` y `5` respectivamente.
-**Por qué:** En *Double Level*, la cadena de conexión contiene las credenciales privadas de PostgreSQL que cambian según el entorno. El puerto y timeout no contienen secretos y facilitan el arranque local rápido.
+**Por qué:** En *Double Level*, la cadena de conexión contiene las credenciales privadas de PostgreSQL que cambian según el entorno. El puerto y timeout no contienen secretos y facilitan el arranque local rápido.              
 **Qué descartamos:** Mantener credenciales en `main.go` o predefinir una contraseña por defecto en el código fuente.
 
 ### D2 · Qué hicimos con la contraseña que ya está en el historial

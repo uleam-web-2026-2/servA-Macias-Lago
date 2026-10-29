@@ -1,0 +1,21 @@
+meta {
+  name: 4. PATCH /pagos/2 con Ana jugador (403)
+  type: http
+  seq: 4
+}
+
+patch {
+  url: http://localhost:8080/pagos/2
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: PEGAR_TOKEN_ANA_AQUI
+}
+
+body:json {
+  {
+    "estado": "pago_por_verificar"
+  }
+}

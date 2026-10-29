@@ -4,11 +4,14 @@ info:
   version: 1.0.0
 servers:
   - url: http://localhost:8080
+security:
+  - sesion: []
 paths:
   /paquetes:
     get:
       operationId: listarPaquetes
       summary: Lista los paquetes de gemas disponibles
+      security: []
       responses:
         "200":
           description: Los paquetes de gemas disponibles
@@ -31,6 +34,7 @@ paths:
                 type: array
                 items: { $ref: "#/components/schemas/Pago" }
         "400": { $ref: "#/components/responses/Error400" }
+        "401": { $ref: "#/components/responses/Error401" }
     post:
       operationId: crearPago
       summary: Registra un pago de paquete de gemas
@@ -46,6 +50,7 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/Pago" }
         "400": { $ref: "#/components/responses/Error400" }
+        "401": { $ref: "#/components/responses/Error401" }
         "422": { $ref: "#/components/responses/Error422" }
   /pagos/{id}:
     parameters:
@@ -63,6 +68,7 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/Pago" }
         "400": { $ref: "#/components/responses/Error400" }
+        "401": { $ref: "#/components/responses/Error401" }
         "404": { $ref: "#/components/responses/Error404" }
     patch:
       operationId: cambiarEstadoPago
@@ -83,6 +89,8 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/Pago" }
         "400": { $ref: "#/components/responses/Error400" }
+        "401": { $ref: "#/components/responses/Error401" }
+        "403": { $ref: "#/components/responses/Error403" }
         "404": { $ref: "#/components/responses/Error404" }
         "422": { $ref: "#/components/responses/Error422" }
     put:
@@ -100,6 +108,8 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/Pago" }
         "400": { $ref: "#/components/responses/Error400" }
+        "401": { $ref: "#/components/responses/Error401" }
+        "403": { $ref: "#/components/responses/Error403" }
         "404": { $ref: "#/components/responses/Error404" }
         "422": { $ref: "#/components/responses/Error422" }
     delete:
@@ -109,11 +119,14 @@ paths:
         "204":
           description: Borrado. No devuelve cuerpo
         "400": { $ref: "#/components/responses/Error400" }
+        "401": { $ref: "#/components/responses/Error401" }
+        "403": { $ref: "#/components/responses/Error403" }
         "404": { $ref: "#/components/responses/Error404" }
   /login:
     post:
       operationId: iniciarSesion
       summary: Entrega un token a cambio de usuario y contraseña
+      security: []
       requestBody:
         required: true
         content:
@@ -136,7 +149,42 @@ paths:
                   token: { type: string }
         "400": { $ref: "#/components/responses/Error400" }
         "401": { $ref: "#/components/responses/Error401" }
+  /facturas:
+    get:
+      operationId: listarFacturas
+      summary: Lista las facturas electrónicas emitidas (plan)
+      responses:
+        "200":
+          description: Lista de facturas
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Factura" }
+        "401": { $ref: "#/components/responses/Error401" }
+  /consumos-gemas:
+    post:
+      operationId: registrarConsumoGemas
+      summary: Registra el gasto de gemas por un usuario (plan)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ConsumoGemasNuevo" }
+      responses:
+        "201":
+          description: Consumo registrado
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ConsumoGemas" }
+        "401": { $ref: "#/components/responses/Error401" }
+        "422": { $ref: "#/components/responses/Error422" }
 components:
+  securitySchemes:
+    sesion:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   schemas:
     EstadoPago:
       type: string
@@ -168,13 +216,37 @@ components:
         paquete_gemas_id: { type: integer }
         monto: { type: number }
         comprobante_url: { type: string }
+    Factura:
+      type: object
+      required: [id, pago_id, identificacion, razon_social, fecha_emision]
+      properties:
+        id: { type: integer, readOnly: true }
+        pago_id: { type: integer }
+        identificacion: { type: string }
+        razon_social: { type: string }
+        fecha_emision: { type: string, format: date-time }
+    ConsumoGemas:
+      type: object
+      required: [id, usuario_id, gemas_gastadas, item_obtenido, fecha]
+      properties:
+        id: { type: integer, readOnly: true }
+        usuario_id: { type: integer }
+        gemas_gastadas: { type: integer }
+        item_obtenido: { type: string }
+        fecha: { type: string, format: date-time }
+    ConsumoGemasNuevo:
+      type: object
+      required: [usuario_id, gemas_gastadas, item_obtenido]
+      properties:
+        usuario_id: { type: integer }
+        gemas_gastadas: { type: integer }
+        item_obtenido: { type: string }
     Error:
       type: object
       required: [error]
       properties:
         error: { type: string }
   responses:
-    responses:
     Error400:
       description: El servidor no entendió la petición
       content:
@@ -182,6 +254,11 @@ components:
           schema: { $ref: "#/components/schemas/Error" }
     Error401:
       description: No se sabe quién hace la petición
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Error403:
+      description: Se sabe quién es, pero su rol no puede hacer esto
       content:
         application/json:
           schema: { $ref: "#/components/schemas/Error" }

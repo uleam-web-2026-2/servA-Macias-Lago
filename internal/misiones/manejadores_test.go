@@ -5,14 +5,10 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
-
-	"github.com/go-chi/chi/v5"
 )
 
 func enrutador() http.Handler {
-	r := chi.NewRouter()
-	(&Manejador{DB: nil}).Rutas(r)
-	return r
+	return enrutadorCon(rolDePrueba)
 }
 
 func TestCrear(t *testing.T) {

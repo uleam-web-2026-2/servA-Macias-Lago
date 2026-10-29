@@ -24,3 +24,12 @@
 **Prueba que no escribimos:** Creación exitosa de una misión que responda HTTP 201 Created.
 **Dónde empieza la base:** En `internal/misiones/manejadores.go`, en la línea **53** (donde se ejecuta `m.DB.Debug().Create(&mision)`).
 **Qué haría falta para probarla:** Se requiere un mock de la interfaz de base de datos o levantar una instancia de PostgreSQL en un contenedor de prueba (Integration Testing) para evitar un pánico por puntero nulo (`nil pointer dereference`).
+
+## Semana 8 Estructura · Arquitectura en Capas
+
+**Estructura elegida:**Separación por responsabilidades dentro del paquete de dominio `internal/misiones/` en tres capas: Transporte HTTP, Reglas del Negocio y Repositorio de Datos.
+
+**Qué va en cada archivo y por qué:**
+- **`manejadores.go` (Capa HTTP / Transporte):** Recibe la petición HTTP, valida el formato JSON y parámetros de ruta, invoca a la regla del negocio y al repositorio, y traduce el resultado a códigos HTTP (`200`, `201`, `400`, `401`, `403`, `404`, `422`). **No consulta la base de datos directamente.**
+- **`estado.go` (Capa de Negocio / Dominio):** Contiene la máquina de estados (`siguientes`), `puedePasar` y `ValidarCambioEstado`. **No importa `net/http` ni `gorm`**, manteniendo las reglas del negocio aisladas del transporte y la base de datos.
+- **`repositorio.go` y `modelos.go` (Capa de Persistencia / Datos):** Encapsula todas las consultas de GORM (`BuscarPago`, `GuardarPago`, `CrearPago`, `ListarPagos`) hacia PostgreSQL.

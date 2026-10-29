@@ -1,0 +1,23 @@
+meta {
+  name: 0. Crear pago nuevo (Preparacion)
+  type: http
+  seq: 0
+}
+
+post {
+  url: http://localhost:8080/pagos
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: PEGAR_TOKEN_AQUI
+}
+
+body:json {
+  {
+    "usuario_id": 1,
+    "paquete_gemas_id": 1,
+    "monto": 4.99
+  }
+}

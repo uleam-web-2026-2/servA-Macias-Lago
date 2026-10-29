@@ -1,0 +1,21 @@
+meta {
+  name: 5. PATCH /pagos/2 con Luis admin (200)
+  type: http
+  seq: 5
+}
+
+patch {
+  url: http://localhost:8080/pagos/2
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: PEGAR_TOKEN_LUIS_AQUI
+}
+
+body:json {
+  {
+    "estado": "pago_por_verificar"
+  }
+}

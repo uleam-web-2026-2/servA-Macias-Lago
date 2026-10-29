@@ -10,9 +10,10 @@ import (
 )
 
 type Config struct {
-	DatabaseURL  string        // Secreto: lleva la contraseña
-	Puerto       string        // Configuración por máquina
-	TiempoEspera time.Duration // Configuración de timeout
+	DatabaseURL  string
+	Puerto       string
+	TiempoEspera time.Duration
+	ClaveFirma   string
 }
 
 func Cargar() (Config, error) {
@@ -22,6 +23,11 @@ func Cargar() (Config, error) {
 	c.DatabaseURL = os.Getenv("DATABASE_URL")
 	if c.DatabaseURL == "" {
 		return c, fmt.Errorf("falta DATABASE_URL (copie .env.example a .env y complete la contraseña)")
+	}
+
+	c.ClaveFirma = os.Getenv("CLAVE_FIRMA")
+	if c.ClaveFirma == "" {
+		return c, fmt.Errorf("falta CLAVE_FIRMA (copie .env.example a .env)")
 	}
 
 	c.Puerto = os.Getenv("PUERTO")

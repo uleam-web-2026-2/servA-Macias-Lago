@@ -1,0 +1,21 @@
+meta {
+  name: 6. PATCH /pagos/1 transicion prohibida (422)
+  type: http
+  seq: 6
+}
+
+patch {
+  url: http://localhost:8080/pagos/1
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: PEGAR_TOKEN_LUIS_AQUI
+}
+
+body:json {
+  {
+    "estado": "completado"
+  }
+}

@@ -12,7 +12,7 @@
 
 ### D1 · Si falta una variable al arrancar
 **Decisión:** `DATABASE_URL` es una variable obligatoria sin valor por defecto que detiene la ejecución si no está presente. `PUERTO` y `TIEMPO_ESPERA_SEGUNDOS` toman `8080` y `5` respectivamente.
-**Por qué:** En *Double Level*, la cadena de conexión contiene las credenciales privadas de PostgreSQL que cambian según el entorno. El puerto y timeout no contienen secretos y facilitan el arranque local rápido.
+**Por qué:** En *Double Level*, la cadena de conexión contiene las credenciales privadas de PostgreSQL que cambian según el entorno. El puerto y timeout no contienen secretos y facilitan el arranque local rápido.              
 **Qué descartamos:** Mantener credenciales en `main.go` o predefinir una contraseña por defecto en el código fuente.
 
 ### D2 · Qué hicimos con la contraseña que ya está en el historial
@@ -27,9 +27,9 @@
 
 ## Semana 8 Estructura · Arquitectura en Capas
 
-**Estructura elegida:** Arquitectura modular por paquetes y separación estricta de responsabilidades en `internal/misiones/`.
+**Estructura elegida:**Separación por responsabilidades dentro del paquete de dominio `internal/misiones/` en tres capas: Transporte HTTP, Reglas del Negocio y Repositorio de Datos.
 
 **Qué va en cada archivo y por qué:**
-- **`manejadores.go` (Capa HTTP / Transporte):** Recibe las peticiones HTTP, decodifica el JSON de entrada, lee los parámetros de la URL con `chi`, invoca a la base de datos y utiliza el paquete `respuesta` para retornar los códigos HTTP correctos (`200`, `201`, `400`, `401`, `403`, `404`, `422`). **No contiene lógica de negocio compleja.**
-- **`estado.go` (Capa de Negocio / Dominio):** Aloja la máquina de estados y la función pura `puedePasar(de, a string) bool`. Esta capa **no sabe absolutamente nada de HTTP** (no importa `net/http` para las reglas de transición) y se limita a validar las reglas del modelo de negocio de los pagos.
-- **`modelos.go` (Capa de Persistencia):** Define los structs de GORM (`Pago`, `PaqueteGemas`, `Mision`, etc.) y sus relaciones con la base de datos.
+- **`manejadores.go` (Capa HTTP / Transporte):** Recibe la petición HTTP, valida el formato JSON y parámetros de ruta, invoca a la regla del negocio y al repositorio, y traduce el resultado a códigos HTTP (`200`, `201`, `400`, `401`, `403`, `404`, `422`). **No consulta la base de datos directamente.**
+- **`estado.go` (Capa de Negocio / Dominio):** Contiene la máquina de estados (`siguientes`), `puedePasar` y `ValidarCambioEstado`. **No importa `net/http` ni `gorm`**, manteniendo las reglas del negocio aisladas del transporte y la base de datos.
+- **`repositorio.go` y `modelos.go` (Capa de Persistencia / Datos):** Encapsula todas las consultas de GORM (`BuscarPago`, `GuardarPago`, `CrearPago`, `ListarPagos`) hacia PostgreSQL.

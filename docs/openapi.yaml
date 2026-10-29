@@ -73,6 +73,15 @@ paths:
     patch:
       operationId: cambiarEstadoPago
       summary: Cambia el estado de un pago
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [estado]
+              properties:
+                estado: { $ref: "#/components/schemas/EstadoPago" }
       responses:
         "200":
           description: El pago con su estado nuevo
@@ -100,6 +109,7 @@ paths:
               schema: { $ref: "#/components/schemas/Pago" }
         "400": { $ref: "#/components/responses/Error400" }
         "401": { $ref: "#/components/responses/Error401" }
+        "403": { $ref: "#/components/responses/Error403" }
         "404": { $ref: "#/components/responses/Error404" }
         "422": { $ref: "#/components/responses/Error422" }
     delete:
@@ -110,6 +120,7 @@ paths:
           description: Borrado. No devuelve cuerpo
         "400": { $ref: "#/components/responses/Error400" }
         "401": { $ref: "#/components/responses/Error401" }
+        "403": { $ref: "#/components/responses/Error403" }
         "404": { $ref: "#/components/responses/Error404" }
   /login:
     post:
@@ -159,13 +170,13 @@ paths:
         required: true
         content:
           application/json:
-            schema: { $ref: "#/components/schemas/PagoNuevo" }
+            schema: { $ref: "#/components/schemas/ConsumoGemasNuevo" }
       responses:
         "201":
           description: Consumo registrado
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/Pago" }
+              schema: { $ref: "#/components/schemas/ConsumoGemas" }
         "401": { $ref: "#/components/responses/Error401" }
         "422": { $ref: "#/components/responses/Error422" }
 components:
@@ -214,6 +225,22 @@ components:
         identificacion: { type: string }
         razon_social: { type: string }
         fecha_emision: { type: string, format: date-time }
+    ConsumoGemas:
+      type: object
+      required: [id, usuario_id, gemas_gastadas, item_obtenido, fecha]
+      properties:
+        id: { type: integer, readOnly: true }
+        usuario_id: { type: integer }
+        gemas_gastadas: { type: integer }
+        item_obtenido: { type: string }
+        fecha: { type: string, format: date-time }
+    ConsumoGemasNuevo:
+      type: object
+      required: [usuario_id, gemas_gastadas, item_obtenido]
+      properties:
+        usuario_id: { type: integer }
+        gemas_gastadas: { type: integer }
+        item_obtenido: { type: string }
     Error:
       type: object
       required: [error]

@@ -11,6 +11,7 @@ import (
 
 	"github.com/uleam-web-2026-2/servA-Macias-Lago/internal/config"
 	"github.com/uleam-web-2026-2/servA-Macias-Lago/internal/misiones"
+	"github.com/uleam-web-2026-2/servA-Macias-Lago/internal/sesion"
 )
 
 func main() {
@@ -24,15 +25,33 @@ func main() {
 		log.Fatal("no se pudo conectar: ", err)
 	}
 
-	if err := db.AutoMigrate(&misiones.Mision{}); err != nil {
+	if err := db.AutoMigrate(
+		&misiones.Usuario{},
+		&misiones.Mision{},
+		&misiones.PaqueteGemas{},
+		&misiones.Pago{},
+		&misiones.Factura{},
+		&misiones.ConsumoGemas{},
+		&sesion.Usuario{},
+	); err != nil {
 		log.Fatal("no se pudo migrar: ", err)
+	}
+
+	misiones.Sembrar(db)
+	if err := sesion.Sembrar(db); err != nil {
+		log.Fatal("no se pudieron sembrar los usuarios de sesión: ", err)
 	}
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
-	(&misiones.Manejador{DB: db}).Rutas(r)
+	tokens := sesion.NuevosTokens(cfg.ClaveFirma)
+	login := &sesion.Manejador{DB: db, Tokens: tokens}
+	r.Post("/login", login.Login)
+
+	repo := misiones.NuevoRepositorio(db)
+	(&misiones.Manejador{Repo: repo}).Rutas(r, tokens)
 
 	servidor := &http.Server{
 		Addr:         ":" + cfg.Puerto,

@@ -76,32 +76,37 @@ func (s *Servicio) BuscarMision(id uint) (Mision, error) {
 	return s.repo.BuscarMision(id)
 }
 
-func (s *Servicio) CrearMision(mision Mision) (Mision, error) {
+// En servicio.go, dentro de CrearMision:
+func (s *Servicio) CrearMision(peticion MisionPeticion) (Mision, error) {
+	if !estadosValidos[peticion.Estado] {
+		return Mision{}, fmt.Errorf("estado no valido")
+	}
+	if peticion.Titulo == "" {
+		return Mision{}, fmt.Errorf("el titulo de la mision no puede estar vacio")
+	}
+	if peticion.Dificultad != "facil" && peticion.Dificultad != "media" && peticion.Dificultad != "dificil" {
+		return Mision{}, fmt.Errorf("la dificultad debe ser facil, media o dificil")
+	}
+
+	mision := peticion.AEntidad()
 	mision.ID = 0
-	if !estadosValidos[mision.Estado] {
-		return mision, fmt.Errorf("estado no valido")
-	}
-	if mision.Titulo == "" {
-		return mision, fmt.Errorf("el titulo de la mision no puede estar vacio")
-	}
-	if mision.Dificultad != "facil" && mision.Dificultad != "media" && mision.Dificultad != "dificil" {
-		return mision, fmt.Errorf("la dificultad debe ser facil, media o dificil")
-	}
+	mision.Estado = "pendiente" // El servidor fija siempre el estado inicial
+	
 	err := s.repo.CrearMision(&mision)
 	return mision, err
 }
 
-func (s *Servicio) ActualizarMision(id uint, cambios Mision) (Mision, error) {
+func (s *Servicio) ActualizarMision(id uint, peticion MisionPeticion) (Mision, error) {
 	existente, err := s.repo.BuscarMision(id)
 	if err != nil {
 		return Mision{}, err
 	}
-	if !estadosValidos[cambios.Estado] || cambios.Titulo == "" ||
-		(cambios.Dificultad != "facil" && cambios.Dificultad != "media" && cambios.Dificultad != "dificil") {
+	if peticion.Titulo == "" || (peticion.Dificultad != "facil" && peticion.Dificultad != "media" && peticion.Dificultad != "dificil") {
 		return Mision{}, fmt.Errorf("datos de mision invalidos")
 	}
-	existente.Titulo = cambios.Titulo
-	existente.Dificultad = cambios.Dificultad
+	existente.Titulo = peticion.Titulo
+	existente.Dificultad = peticion.Dificultad
+	// El estado no cambia por PUT común, se mantiene el existente o se maneja por PATCH
 	err = s.repo.GuardarMision(&existente)
 	return existente, err
 }

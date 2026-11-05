@@ -173,17 +173,17 @@ func (m *Manejador) borrarPago(w http.ResponseWriter, r *http.Request) {
 
 // Manejadores de Misiones
 func (m *Manejador) crear(w http.ResponseWriter, r *http.Request) {
-	var mision Mision
-	if err := json.NewDecoder(r.Body).Decode(&mision); err != nil {
+	var pedido MisionPeticion
+	if err := json.NewDecoder(r.Body).Decode(&pedido); err != nil {
 		respuesta.Error(w, http.StatusBadRequest, "El cuerpo no es un JSON válido")
 		return
 	}
-	creada, err := m.Servicio.CrearMision(mision)
+	creada, err := m.Servicio.CrearMision(pedido)
 	if err != nil {
 		respuesta.Error(w, http.StatusUnprocessableEntity, err.Error())
 		return
 	}
-	respuesta.Exito(w, http.StatusCreated, creada)
+	respuesta.Exito(w, http.StatusCreated, NuevaMisionRespuesta(creada))
 }
 
 func (m *Manejador) listar(w http.ResponseWriter, r *http.Request) {
@@ -193,7 +193,12 @@ func (m *Manejador) listar(w http.ResponseWriter, r *http.Request) {
 		respuesta.Error(w, http.StatusInternalServerError, "Error al consultar la base de datos")
 		return
 	}
-	respuesta.Exito(w, http.StatusOK, lista)
+	// Mapear lista a DTOs de respuesta
+	var respuestas []MisionRespuesta
+	for _, mis := range lista {
+		respuestas = append(respuestas, NuevaMisionRespuesta(mis))
+	}
+	respuesta.Exito(w, http.StatusOK, respuestas)
 }
 
 func (m *Manejador) verUno(w http.ResponseWriter, r *http.Request) {
@@ -210,7 +215,7 @@ func (m *Manejador) verUno(w http.ResponseWriter, r *http.Request) {
 		respuesta.Error(w, http.StatusInternalServerError, "Error al consultar la base de datos")
 		return
 	}
-	respuesta.Exito(w, http.StatusOK, mision)
+	respuesta.Exito(w, http.StatusOK, NuevaMisionRespuesta(mision))
 }
 
 func (m *Manejador) actualizar(w http.ResponseWriter, r *http.Request) {
@@ -218,12 +223,12 @@ func (m *Manejador) actualizar(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	var datosNuevos Mision
-	if err := json.NewDecoder(r.Body).Decode(&datosNuevos); err != nil {
+	var pedido MisionPeticion
+	if err := json.NewDecoder(r.Body).Decode(&pedido); err != nil {
 		respuesta.Error(w, http.StatusBadRequest, "El cuerpo no es un JSON válido")
 		return
 	}
-	actualizada, err := m.Servicio.ActualizarMision(id, datosNuevos)
+	actualizada, err := m.Servicio.ActualizarMision(id, pedido)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			respuesta.Error(w, http.StatusNotFound, "Misión no encontrada")
@@ -232,7 +237,7 @@ func (m *Manejador) actualizar(w http.ResponseWriter, r *http.Request) {
 		respuesta.Error(w, http.StatusUnprocessableEntity, err.Error())
 		return
 	}
-	respuesta.Exito(w, http.StatusOK, actualizada)
+	respuesta.Exito(w, http.StatusOK, NuevaMisionRespuesta(actualizada))
 }
 
 func (m *Manejador) borrar(w http.ResponseWriter, r *http.Request) {

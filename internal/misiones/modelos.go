@@ -17,14 +17,14 @@ type Usuario struct {
 	Misiones []Mision `json:"Misiones"` // Relación 1 a N
 }
 
-// Mision representa la entidad con estados del lado de los MUCHOS
+// Mision representa la entidad con estados del lado de los MUCHOS (sin etiquetas json por regla del taller)
 type Mision struct {
 	gorm.Model
-	Titulo     string `json:"Titulo"`
-	Categoria  string `json:"Categoria"`
-	Dificultad string `json:"Dificultad"`
-	Estado     string `json:"Estado"`
-	UsuarioID  uint   `json:"UsuarioID"` // Clave foránea
+	Titulo     string
+	Categoria  string
+	Dificultad string
+	Estado     string
+	UsuarioID  uint
 }
 
 var estadosValidos = map[string]bool{

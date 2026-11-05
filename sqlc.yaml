@@ -1,0 +1,9 @@
+version: "2"
+sql:
+  - schema: "internal/misiones/schema.sql"
+    queries: "internal/misiones/query.sql"
+    engine: "postgresql" #
+    gen:
+      go:
+        package: "misiones"
+        out: "internal/misiones/sqlc"

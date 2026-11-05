@@ -14,7 +14,7 @@ import (
 )
 
 type Manejador struct {
-	Repo *Repositorio
+	Servicio *Servicio
 }
 
 func (m *Manejador) Rutas(r chi.Router, tokens *sesion.Tokens) {
@@ -54,38 +54,21 @@ func (m *Manejador) cambiarEstado(w http.ResponseWriter, r *http.Request) {
 		respuesta.Error(w, http.StatusBadRequest, "el cuerpo no es JSON válido")
 		return
 	}
-	if _, existe := siguientes[pedido.Estado]; !existe {
-		respuesta.Error(w, http.StatusUnprocessableEntity, "estado no permitido: "+pedido.Estado)
-		return
-	}
 
-	pago, err := m.Repo.BuscarPago(id)
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		respuesta.Error(w, http.StatusNotFound, "no existe el pago")
-		return
-	}
+	pago, err := m.Servicio.CambiarEstadoPago(id, pedido.Estado)
 	if err != nil {
-		respuesta.Error(w, http.StatusInternalServerError, "no se pudo leer")
-		return
-	}
-
-	// Se delega la decisión a la capa de dominio (estado.go)
-	if err := ValidarCambioEstado(pago.Estado, pedido.Estado); err != nil {
-		respuesta.Error(w, http.StatusUnprocessableEntity,
-			"de "+pago.Estado+" no se puede pasar a "+pedido.Estado)
-		return
-	}
-
-	pago.Estado = pedido.Estado
-	if err := m.Repo.GuardarPago(&pago); err != nil {
-		respuesta.Error(w, http.StatusInternalServerError, "no se pudo guardar")
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			respuesta.Error(w, http.StatusNotFound, "no existe el pago")
+			return
+		}
+		respuesta.Error(w, http.StatusUnprocessableEntity, err.Error())
 		return
 	}
 	respuesta.JSON(w, http.StatusOK, pago)
 }
 
 func (m *Manejador) listarPaquetes(w http.ResponseWriter, r *http.Request) {
-	paquetes, err := m.Repo.ListarPaquetes()
+	paquetes, err := m.Servicio.ListarPaquetes()
 	if err != nil {
 		respuesta.Error(w, http.StatusInternalServerError, "Error al consultar los paquetes de gemas")
 		return
@@ -100,37 +83,17 @@ func (m *Manejador) crearPago(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pago.ID = 0
-	if pago.UsuarioID == 0 {
-		pago.UsuarioID = 1
-	}
-	if pago.Estado == "" {
-		pago.Estado = "pendiente"
-	}
-
-	if !estadosPagoValidos[pago.Estado] {
-		respuesta.Error(w, http.StatusUnprocessableEntity, "Estado de pago no permitido")
+	creado, err := m.Servicio.CrearPago(pago)
+	if err != nil {
+		respuesta.Error(w, http.StatusUnprocessableEntity, err.Error())
 		return
 	}
-	if pago.PaqueteGemasID == 0 {
-		respuesta.Error(w, http.StatusUnprocessableEntity, "El paquete_gemas_id es obligatorio")
-		return
-	}
-	if pago.Monto <= 0 {
-		respuesta.Error(w, http.StatusUnprocessableEntity, "El monto debe ser mayor a cero")
-		return
-	}
-
-	if err := m.Repo.CrearPago(&pago); err != nil {
-		respuesta.Error(w, http.StatusInternalServerError, "No se pudo registrar el pago")
-		return
-	}
-	respuesta.Exito(w, http.StatusCreated, pago)
+	respuesta.Exito(w, http.StatusCreated, creado)
 }
 
 func (m *Manejador) listarPagos(w http.ResponseWriter, r *http.Request) {
 	estado := r.URL.Query().Get("estado")
-	pagos, err := m.Repo.ListarPagos(estado)
+	pagos, err := m.Servicio.ListarPagos(estado)
 	if err != nil {
 		respuesta.Error(w, http.StatusInternalServerError, "Error al consultar los pagos")
 		return
@@ -143,7 +106,7 @@ func (m *Manejador) verPago(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	pago, err := m.Repo.BuscarPago(id)
+	pago, err := m.Servicio.BuscarPago(id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			respuesta.Error(w, http.StatusNotFound, "Pago no encontrado")
@@ -160,7 +123,7 @@ func (m *Manejador) actualizarPago(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	existente, err := m.Repo.BuscarPago(id)
+	existente, err := m.Servicio.BuscarPago(id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			respuesta.Error(w, http.StatusNotFound, "Pago no encontrado")
@@ -184,7 +147,7 @@ func (m *Manejador) actualizarPago(w http.ResponseWriter, r *http.Request) {
 	existente.Monto = datosNuevos.Monto
 	existente.ComprobanteURL = datosNuevos.ComprobanteURL
 
-	if err := m.Repo.GuardarPago(&existente); err != nil {
+	if err := m.Servicio.GuardarPago(&existente); err != nil {
 		respuesta.Error(w, http.StatusInternalServerError, "No se pudo actualizar el pago")
 		return
 	}
@@ -196,7 +159,7 @@ func (m *Manejador) borrarPago(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	filas, err := m.Repo.BorrarPago(id)
+	filas, err := m.Servicio.BorrarPago(id)
 	if err != nil {
 		respuesta.Error(w, http.StatusInternalServerError, "Error al eliminar el pago")
 		return
@@ -215,29 +178,17 @@ func (m *Manejador) crear(w http.ResponseWriter, r *http.Request) {
 		respuesta.Error(w, http.StatusBadRequest, "El cuerpo no es un JSON válido")
 		return
 	}
-	mision.ID = 0
-	if !estadosValidos[mision.Estado] {
-		respuesta.Error(w, http.StatusUnprocessableEntity, "Estado no válido")
+	creada, err := m.Servicio.CrearMision(mision)
+	if err != nil {
+		respuesta.Error(w, http.StatusUnprocessableEntity, err.Error())
 		return
 	}
-	if mision.Titulo == "" {
-		respuesta.Error(w, http.StatusUnprocessableEntity, "El título de la misión no puede estar vacío")
-		return
-	}
-	if mision.Dificultad != "facil" && mision.Dificultad != "media" && mision.Dificultad != "dificil" {
-		respuesta.Error(w, http.StatusUnprocessableEntity, "La dificultad debe ser facil, media o dificil")
-		return
-	}
-	if err := m.Repo.CrearMision(&mision); err != nil {
-		respuesta.Error(w, http.StatusInternalServerError, "No se pudo guardar la misión")
-		return
-	}
-	respuesta.Exito(w, http.StatusCreated, mision)
+	respuesta.Exito(w, http.StatusCreated, creada)
 }
 
 func (m *Manejador) listar(w http.ResponseWriter, r *http.Request) {
 	estado := r.URL.Query().Get("estado")
-	lista, err := m.Repo.ListarMisiones(estado)
+	lista, err := m.Servicio.ListarMisiones(estado)
 	if err != nil {
 		respuesta.Error(w, http.StatusInternalServerError, "Error al consultar la base de datos")
 		return
@@ -250,7 +201,7 @@ func (m *Manejador) verUno(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	mision, err := m.Repo.BuscarMision(id)
+	mision, err := m.Servicio.BuscarMision(id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			respuesta.Error(w, http.StatusNotFound, "Misión no encontrada")
@@ -267,32 +218,21 @@ func (m *Manejador) actualizar(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	existente, err := m.Repo.BuscarMision(id)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			respuesta.Error(w, http.StatusNotFound, "Misión no encontrada")
-			return
-		}
-		respuesta.Error(w, http.StatusInternalServerError, "Error al consultar la base de datos")
-		return
-	}
 	var datosNuevos Mision
 	if err := json.NewDecoder(r.Body).Decode(&datosNuevos); err != nil {
 		respuesta.Error(w, http.StatusBadRequest, "El cuerpo no es un JSON válido")
 		return
 	}
-	if !estadosValidos[datosNuevos.Estado] || datosNuevos.Titulo == "" ||
-		(datosNuevos.Dificultad != "facil" && datosNuevos.Dificultad != "media" && datosNuevos.Dificultad != "dificil") {
-		respuesta.Error(w, http.StatusUnprocessableEntity, "Datos de misión inválidos")
+	actualizada, err := m.Servicio.ActualizarMision(id, datosNuevos)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			respuesta.Error(w, http.StatusNotFound, "Misión no encontrada")
+			return
+		}
+		respuesta.Error(w, http.StatusUnprocessableEntity, err.Error())
 		return
 	}
-	existente.Titulo = datosNuevos.Titulo
-	existente.Dificultad = datosNuevos.Dificultad
-	if err := m.Repo.GuardarMision(&existente); err != nil {
-		respuesta.Error(w, http.StatusInternalServerError, "No se pudo actualizar la misión")
-		return
-	}
-	respuesta.Exito(w, http.StatusOK, existente)
+	respuesta.Exito(w, http.StatusOK, actualizada)
 }
 
 func (m *Manejador) borrar(w http.ResponseWriter, r *http.Request) {
@@ -300,7 +240,7 @@ func (m *Manejador) borrar(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	filas, err := m.Repo.BorrarMision(id)
+	filas, err := m.Servicio.BorrarMision(id)
 	if err != nil {
 		respuesta.Error(w, http.StatusInternalServerError, "Error al eliminar de la base de datos")
 		return

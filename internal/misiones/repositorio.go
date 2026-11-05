@@ -1,25 +1,49 @@
 package misiones
 
-import "gorm.io/gorm"
+import (
+	"errors"
 
-// Repositorio define las operaciones de persistencia de la entidad principal.
-type Repositorio struct {
+	"gorm.io/gorm"
+)
+
+var ErrNoExiste = errors.New("registro no encontrado")
+
+// Repositorio es la interfaz que abstrae la base de datos para la capa de servicio.
+type Repositorio interface {
+	ListarPaquetes() ([]PaqueteGemas, error)
+	ListarPagos(estado string) ([]Pago, error)
+	CrearPago(p *Pago) error
+	BuscarPago(id uint) (Pago, error)
+	GuardarPago(p *Pago) error
+	BorrarPago(id uint) (int64, error)
+
+	CrearMision(m *Mision) error
+	ListarMisiones(estado string) ([]Mision, error)
+	BuscarMision(id uint) (Mision, error)
+	GuardarMision(m *Mision) error
+	BorrarMision(id uint) (int64, error)
+}
+
+// AlmacenGorm implementa Repositorio usando GORM.
+type AlmacenGorm struct {
 	DB *gorm.DB
 }
 
-func NuevoRepositorio(db *gorm.DB) *Repositorio {
-	return &Repositorio{DB: db}
+var _ Repositorio = (*AlmacenGorm)(nil)
+
+func NuevoAlmacenGorm(db *gorm.DB) *AlmacenGorm {
+	return &AlmacenGorm{DB: db}
 }
 
-func (r *Repositorio) ListarPaquetes() ([]PaqueteGemas, error) {
+func (a *AlmacenGorm) ListarPaquetes() ([]PaqueteGemas, error) {
 	var paquetes []PaqueteGemas
-	err := r.DB.Find(&paquetes).Error
+	err := a.DB.Find(&paquetes).Error
 	return paquetes, err
 }
 
-func (r *Repositorio) ListarPagos(estado string) ([]Pago, error) {
+func (a *AlmacenGorm) ListarPagos(estado string) ([]Pago, error) {
 	var pagos []Pago
-	q := r.DB
+	q := a.DB
 	if estado != "" {
 		q = q.Where("estado = ?", estado)
 	}
@@ -27,33 +51,32 @@ func (r *Repositorio) ListarPagos(estado string) ([]Pago, error) {
 	return pagos, err
 }
 
-func (r *Repositorio) CrearPago(p *Pago) error {
-	return r.DB.Create(p).Error
+func (a *AlmacenGorm) CrearPago(p *Pago) error {
+	return a.DB.Create(p).Error
 }
 
-func (r *Repositorio) BuscarPago(id uint) (Pago, error) {
+func (a *AlmacenGorm) BuscarPago(id uint) (Pago, error) {
 	var p Pago
-	err := r.DB.First(&p, id).Error
+	err := a.DB.First(&p, id).Error
 	return p, err
 }
 
-func (r *Repositorio) GuardarPago(p *Pago) error {
-	return r.DB.Save(p).Error
+func (a *AlmacenGorm) GuardarPago(p *Pago) error {
+	return a.DB.Save(p).Error
 }
 
-func (r *Repositorio) BorrarPago(id uint) (int64, error) {
-	res := r.DB.Delete(&Pago{}, id)
+func (a *AlmacenGorm) BorrarPago(id uint) (int64, error) {
+	res := a.DB.Delete(&Pago{}, id)
 	return res.RowsAffected, res.Error
 }
 
-// Operaciones de Misiones
-func (r *Repositorio) CrearMision(m *Mision) error {
-	return r.DB.Create(m).Error
+func (a *AlmacenGorm) CrearMision(m *Mision) error {
+	return a.DB.Create(m).Error
 }
 
-func (r *Repositorio) ListarMisiones(estado string) ([]Mision, error) {
+func (a *AlmacenGorm) ListarMisiones(estado string) ([]Mision, error) {
 	var lista []Mision
-	q := r.DB
+	q := a.DB
 	if estado != "" {
 		q = q.Where("estado = ?", estado)
 	}
@@ -61,17 +84,17 @@ func (r *Repositorio) ListarMisiones(estado string) ([]Mision, error) {
 	return lista, err
 }
 
-func (r *Repositorio) BuscarMision(id uint) (Mision, error) {
+func (a *AlmacenGorm) BuscarMision(id uint) (Mision, error) {
 	var m Mision
-	err := r.DB.First(&m, id).Error
+	err := a.DB.First(&m, id).Error
 	return m, err
 }
 
-func (r *Repositorio) GuardarMision(m *Mision) error {
-	return r.DB.Save(m).Error
+func (a *AlmacenGorm) GuardarMision(m *Mision) error {
+	return a.DB.Save(m).Error
 }
 
-func (r *Repositorio) BorrarMision(id uint) (int64, error) {
-	res := r.DB.Delete(&Mision{}, id)
+func (a *AlmacenGorm) BorrarMision(id uint) (int64, error) {
+	res := a.DB.Delete(&Mision{}, id)
 	return res.RowsAffected, res.Error
 }

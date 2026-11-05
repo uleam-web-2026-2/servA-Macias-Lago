@@ -15,7 +15,9 @@ var tokensDePrueba = sesion.NuevosTokens("secreto-solo-de-las-pruebas")
 
 func enrutadorCon(rol string) http.Handler {
 	r := chi.NewRouter()
-	(&Manejador{Repo: NuevoRepositorio(nil)}).Rutas(r, tokensDePrueba)
+	repo := NuevoAlmacenGorm(nil)
+	servicio := NuevoServicio(repo)
+	(&Manejador{Servicio: servicio}).Rutas(r, tokensDePrueba)
 	if rol == "" {
 		return r
 	}

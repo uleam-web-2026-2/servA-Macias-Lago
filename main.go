@@ -50,8 +50,9 @@ func main() {
 	login := &sesion.Manejador{DB: db, Tokens: tokens}
 	r.Post("/login", login.Login)
 
-	repo := misiones.NuevoRepositorio(db)
-	(&misiones.Manejador{Repo: repo}).Rutas(r, tokens)
+	repo := misiones.NuevoAlmacenGorm(db)
+	servicio := misiones.NuevoServicio(repo)
+	(&misiones.Manejador{Servicio: servicio}).Rutas(r, tokens)
 
 	servidor := &http.Server{
 		Addr:         ":" + cfg.Puerto,

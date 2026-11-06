@@ -33,3 +33,25 @@
 - **`manejadores.go` (Capa HTTP / Transporte):** Recibe la petición HTTP, valida el formato JSON y parámetros de ruta, invoca a la regla del negocio y al repositorio, y traduce el resultado a códigos HTTP (`200`, `201`, `400`, `401`, `403`, `404`, `422`). **No consulta la base de datos directamente.**
 - **`estado.go` (Capa de Negocio / Dominio):** Contiene la máquina de estados (`siguientes`), `puedePasar` y `ValidarCambioEstado`. **No importa `net/http` ni `gorm`**, manteniendo las reglas del negocio aisladas del transporte y la base de datos.
 - **`repositorio.go` y `modelos.go` (Capa de Persistencia / Datos):** Encapsula todas las consultas de GORM (`BuscarPago`, `GuardarPago`, `CrearPago`, `ListarPagos`) hacia PostgreSQL.
+
+## Semana 10 — transacciones
+
+### D1 · El caso
+En la operación **`CompletarMisionYOtorgarRecompensa(misionID, usuarioID)`**, el servicio ejecuta dos escrituras atómicas: cambia el estado de la `Mision` a `"completada"` (tabla `misions`) y actualiza la experiencia/gemas del `Usuario` (tabla `usuarios`). Si el segundo paso falla, la misión quedaría cerrada sin otorgar la recompensa.
+
+### D2 · Opciones que consideramos
+1. **Opción A (Manejar transacciones dentro del Servicio):** Rompe la regla de dependencia y las pruebas unitarias sin base de datos.
+2. **Opción B (Encapsular la transacción dentro del adaptador del Repositorio):** El servicio delega la acción y cada adaptador (`AlmacenGorm` o `MisionesSqlc`) gestiona su propia transacción internamente.
+
+### D3 · La que elegimos y por qué
+Elegimos la **Opción B** porque aísla la infraestructura del dominio, permitiendo pruebas en memoria con repositorios falsos y cumpliendo todas las restricciones.
+
+### D4 · La que descartamos y por qué
+Descartamos la Opción A por acoplar el servicio a motores de base de datos concretos, y descartamos la compensación manual por riesgo de inconsistencia ante fallos de red.
+
+### D5 · Con sqlc
+Utilizamos el método `WithTx(tx *sql.Tx) *Queries` generado por `sqlc`. El adaptador abre `a.Conexion.Begin()`, envuelve las consultas con `qtx := a.q.WithTx(tx)` y aplica `Commit()` o `Rollback()` según corresponda.
+
+### D6 · Archivos
+- **Archivos tocados:** `sqlc.yaml`, `internal/misiones/schema.sql`, `internal/misiones/query.sql`, `internal/misiones/sqlc/*`, `internal/misiones/dtos.go`, `internal/misiones/repositorio.go`, `internal/misiones/servicio.go`, `internal/misiones/manejadores.go`, `main.go`, `docs/openapi.yaml`, `.env.example`, `docs/taller10/*` y `docs/decisiones.md`.
+- **Archivos sin cambios:** `internal/config/*`, `internal/sesion/*`, `internal/respuesta/*`.

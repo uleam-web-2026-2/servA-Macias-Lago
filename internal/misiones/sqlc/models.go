@@ -2,17 +2,20 @@
 // versions:
 //   sqlc v1.31.1
 
-package misiones
+package sqlc
 
 import (
 	"database/sql"
 )
 
-type Misione struct {
-	ID         int32
+type Mision struct {
+	ID         int64
+	CreatedAt  sql.NullTime
+	UpdatedAt  sql.NullTime
+	DeletedAt  sql.NullTime
 	Titulo     string
 	Categoria  string
 	Dificultad string
 	Estado     string
-	CreatedAt  sql.NullTime
+	UsuarioID  int64
 }

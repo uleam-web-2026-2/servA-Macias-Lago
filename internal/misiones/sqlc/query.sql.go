@@ -3,42 +3,68 @@
 //   sqlc v1.31.1
 // source: query.sql
 
-package misiones
+package sqlc
 
 import (
 	"context"
+	"database/sql"
 )
 
-const listarMisionesSqlc = `-- name: ListarMisionesSqlc :many
-SELECT id, titulo, categoria, dificultad, estado, created_at FROM misiones
+const buscarMisionSqlc = `-- name: BuscarMisionSqlc :one
+SELECT id, titulo, categoria, dificultad, estado, usuario_id, created_at
+FROM misions
+WHERE id = $1 AND deleted_at IS NULL
 `
 
-func (q *Queries) ListarMisionesSqlc(ctx context.Context) ([]Misione, error) {
-	rows, err := q.db.QueryContext(ctx, listarMisionesSqlc)
+type BuscarMisionSqlcRow struct {
+	ID         int64
+	Titulo     string
+	Categoria  string
+	Dificultad string
+	Estado     string
+	UsuarioID  int64
+	CreatedAt  sql.NullTime
+}
+
+func (q *Queries) BuscarMisionSqlc(ctx context.Context, id int64) (BuscarMisionSqlcRow, error) {
+	row := q.db.QueryRowContext(ctx, buscarMisionSqlc, id)
+	var i BuscarMisionSqlcRow
+	err := row.Scan(
+		&i.ID,
+		&i.Titulo,
+		&i.Categoria,
+		&i.Dificultad,
+		&i.Estado,
+		&i.UsuarioID,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const guardarMisionSqlc = `-- name: GuardarMisionSqlc :execrows
+UPDATE misions
+SET titulo = $2, categoria = $3, dificultad = $4, estado = $5, updated_at = NOW()
+WHERE id = $1 AND deleted_at IS NULL
+`
+
+type GuardarMisionSqlcParams struct {
+	ID         int64
+	Titulo     string
+	Categoria  string
+	Dificultad string
+	Estado     string
+}
+
+func (q *Queries) GuardarMisionSqlc(ctx context.Context, arg GuardarMisionSqlcParams) (int64, error) {
+	result, err := q.db.ExecContext(ctx, guardarMisionSqlc,
+		arg.ID,
+		arg.Titulo,
+		arg.Categoria,
+		arg.Dificultad,
+		arg.Estado,
+	)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
-	defer rows.Close()
-	var items []Misione
-	for rows.Next() {
-		var i Misione
-		if err := rows.Scan(
-			&i.ID,
-			&i.Titulo,
-			&i.Categoria,
-			&i.Dificultad,
-			&i.Estado,
-			&i.CreatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
+	return result.RowsAffected()
 }

@@ -50,7 +50,13 @@ func main() {
 	login := &sesion.Manejador{DB: db, Tokens: tokens}
 	r.Post("/login", login.Login)
 
-	repo := misiones.NuevoAlmacenGorm(db)
+	conexion, err := db.DB()
+	if err != nil {
+		log.Fatal("no se pudo obtener la conexión: ", err)
+	}
+
+	repoGorm := misiones.NuevoAlmacenGorm(db)
+	repo := misiones.NuevoMisionesSqlc(repoGorm, conexion)
 	servicio := misiones.NuevoServicio(repo)
 	(&misiones.Manejador{Servicio: servicio}).Rutas(r, tokens)
 

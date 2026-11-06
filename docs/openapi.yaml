@@ -7,6 +7,105 @@ servers:
 security:
   - sesion: []
 paths:
+  /misiones:
+    get:
+      operationId: listarMisiones
+      summary: Lista las misiones disponibles del juego
+      security: []
+      responses:
+        "200":
+          description: Lista de misiones
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/MisionRespuesta" }
+        "400": { $ref: "#/components/responses/Error400" }
+    post:
+      operationId: crearMision
+      summary: Crea una misión nueva con estado inicial pendiente
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MisionPeticion" }
+      responses:
+        "201":
+          description: La misión creada
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MisionRespuesta" }
+        "400": { $ref: "#/components/responses/Error400" }
+        "401": { $ref: "#/components/responses/Error401" }
+        "422": { $ref: "#/components/responses/Error422" }
+  /misiones/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer, minimum: 1 }
+    get:
+      operationId: verMision
+      summary: Devuelve una misión por su id
+      security: []
+      responses:
+        "200":
+          description: La misión
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MisionRespuesta" }
+        "400": { $ref: "#/components/responses/Error400" }
+        "404": { $ref: "#/components/responses/Error404" }
+    put:
+      operationId: modificarMision
+      summary: Modifica los datos de una misión (no su estado)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MisionPeticion" }
+      responses:
+        "200":
+          description: La misión modificada
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MisionRespuesta" }
+        "400": { $ref: "#/components/responses/Error400" }
+        "401": { $ref: "#/components/responses/Error401" }
+        "404": { $ref: "#/components/responses/Error404" }
+        "422": { $ref: "#/components/responses/Error422" }
+    patch:
+      operationId: cambiarEstadoMision
+      summary: Cambia el estado de una misión
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [estado]
+              properties:
+                estado: { type: string, enum: [pendiente, en_progreso, completada, fallida] }
+      responses:
+        "200":
+          description: Misión con su nuevo estado
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MisionRespuesta" }
+        "400": { $ref: "#/components/responses/Error400" }
+        "401": { $ref: "#/components/responses/Error401" }
+        "403": { $ref: "#/components/responses/Error403" }
+        "404": { $ref: "#/components/responses/Error404" }
+        "422": { $ref: "#/components/responses/Error422" }
+    delete:
+      operationId: borrarMision
+      summary: Borra una misión
+      responses:
+        "204":
+          description: Borrada. No devuelve cuerpo
+        "400": { $ref: "#/components/responses/Error400" }
+        "401": { $ref: "#/components/responses/Error401" }
+        "404": { $ref: "#/components/responses/Error404" }
   /paquetes:
     get:
       operationId: listarPaquetes
@@ -186,6 +285,27 @@ components:
       scheme: bearer
       bearerFormat: JWT
   schemas:
+    MisionPeticion:
+      type: object
+      required: [titulo, categoria, dificultad]
+      properties:
+        titulo: { type: string }
+        categoria: { type: string }
+        dificultad:
+          type: string
+          enum: [facil, media, dificil]
+    MisionRespuesta:
+      type: object
+      required: [id, titulo, categoria, dificultad, estado, created_at]
+      properties:
+        id: { type: integer, readOnly: true }
+        titulo: { type: string }
+        categoria: { type: string }
+        dificultad: { type: string }
+        estado:
+          type: string
+          enum: [pendiente, en_progreso, completada, fallida]
+        created_at: { type: string, format: date-time }
     EstadoPago:
       type: string
       enum: [pendiente, pago_por_verificar, completado, rechazado]

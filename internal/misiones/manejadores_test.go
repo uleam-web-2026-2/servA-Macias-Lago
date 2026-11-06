@@ -24,17 +24,12 @@ func TestCrear(t *testing.T) {
 		},
 		{
 			nombre: "titulo vacio responde 422",
-			cuerpo: `{"titulo": "", "categoria": "Diaria", "dificultad": "facil", "estado": "pendiente"}`,
-			codigo: http.StatusUnprocessableEntity,
-		},
-		{
-			nombre: "estado invalido responde 422",
-			cuerpo: `{"titulo": "Derrotar al Jefe", "categoria": "Diaria", "dificultad": "facil", "estado": "invalido"}`,
+			cuerpo: `{"titulo": "", "categoria": "Diaria", "dificultad": "facil"}`,
 			codigo: http.StatusUnprocessableEntity,
 		},
 		{
 			nombre: "dificultad no permitida responde 422 (Regla propia)",
-			cuerpo: `{"titulo": "Derrotar al Jefe", "categoria": "Diaria", "dificultad": "legendaria", "estado": "pendiente"}`,
+			cuerpo: `{"titulo": "Derrotar al Jefe", "categoria": "Diaria", "dificultad": "legendaria"}`,
 			codigo: http.StatusUnprocessableEntity,
 		},
 	}

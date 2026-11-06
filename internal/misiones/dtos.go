@@ -2,12 +2,11 @@ package misiones
 
 import "time"
 
-// DTO para la petición de creación/actualización de Misión
+// DTO para la petición de creación/actualización de Misión (sin id ni estado)
 type MisionPeticion struct {
 	Titulo     string `json:"titulo"`
 	Categoria  string `json:"categoria"`
 	Dificultad string `json:"dificultad"`
-	Estado     string `json:"estado"`
 }
 
 func (p MisionPeticion) AEntidad() Mision {
@@ -15,7 +14,6 @@ func (p MisionPeticion) AEntidad() Mision {
 		Titulo:     p.Titulo,
 		Categoria:  p.Categoria,
 		Dificultad: p.Dificultad,
-		Estado:     p.Estado,
 	}
 }
 

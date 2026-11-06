@@ -76,11 +76,7 @@ func (s *Servicio) BuscarMision(id uint) (Mision, error) {
 	return s.repo.BuscarMision(id)
 }
 
-// En servicio.go, dentro de CrearMision:
 func (s *Servicio) CrearMision(peticion MisionPeticion) (Mision, error) {
-	if !estadosValidos[peticion.Estado] {
-		return Mision{}, fmt.Errorf("estado no valido")
-	}
 	if peticion.Titulo == "" {
 		return Mision{}, fmt.Errorf("el titulo de la mision no puede estar vacio")
 	}
@@ -90,8 +86,9 @@ func (s *Servicio) CrearMision(peticion MisionPeticion) (Mision, error) {
 
 	mision := peticion.AEntidad()
 	mision.ID = 0
+	mision.UsuarioID = 1
 	mision.Estado = "pendiente" // El servidor fija siempre el estado inicial
-	
+
 	err := s.repo.CrearMision(&mision)
 	return mision, err
 }
@@ -105,8 +102,8 @@ func (s *Servicio) ActualizarMision(id uint, peticion MisionPeticion) (Mision, e
 		return Mision{}, fmt.Errorf("datos de mision invalidos")
 	}
 	existente.Titulo = peticion.Titulo
+	existente.Categoria = peticion.Categoria
 	existente.Dificultad = peticion.Dificultad
-	// El estado no cambia por PUT común, se mantiene el existente o se maneja por PATCH
 	err = s.repo.GuardarMision(&existente)
 	return existente, err
 }

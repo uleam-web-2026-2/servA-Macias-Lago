@@ -30,7 +30,7 @@ func (m *Manejador) Rutas(r chi.Router, tokens *sesion.Tokens) {
 	conSesion.Delete("/misiones/{id}", m.borrar)
 
 	conSesion.Get("/pagos", m.listarPagos)
-	conSesion.Get("/pagos/mios", m.listarPagos)
+	conSesion.Get("/pagos/mios", m.listarMisPagos)
 	conSesion.Post("/pagos", m.crearPago)
 	conSesion.Get("/pagos/{id}", m.verPago)
 
@@ -57,14 +57,14 @@ func (m *Manejador) cambiarEstado(w http.ResponseWriter, r *http.Request) {
 
 	pago, err := m.Servicio.CambiarEstadoPago(id, pedido.Estado)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if errors.Is(err, ErrNoExiste) || errors.Is(err, gorm.ErrRecordNotFound) {
 			respuesta.Error(w, http.StatusNotFound, "no existe el pago")
 			return
 		}
 		respuesta.Error(w, http.StatusUnprocessableEntity, err.Error())
 		return
 	}
-	respuesta.JSON(w, http.StatusOK, pago)
+	respuesta.JSON(w, http.StatusOK, NuevoPagoRespuesta(pago))
 }
 
 func (m *Manejador) listarPaquetes(w http.ResponseWriter, r *http.Request) {
@@ -77,18 +77,23 @@ func (m *Manejador) listarPaquetes(w http.ResponseWriter, r *http.Request) {
 }
 
 func (m *Manejador) crearPago(w http.ResponseWriter, r *http.Request) {
-	var pago Pago
-	if err := json.NewDecoder(r.Body).Decode(&pago); err != nil {
+	var pedido PagoPeticion
+	if err := json.NewDecoder(r.Body).Decode(&pedido); err != nil {
 		respuesta.Error(w, http.StatusBadRequest, "El cuerpo no es un JSON válido")
 		return
 	}
 
-	creado, err := m.Servicio.CrearPago(pago)
+	var usuarioID uint = 1
+	if s, ok := sesion.De(r); ok && s.UsuarioID != 0 {
+		usuarioID = s.UsuarioID
+	}
+
+	creado, err := m.Servicio.CrearPago(usuarioID, pedido)
 	if err != nil {
 		respuesta.Error(w, http.StatusUnprocessableEntity, err.Error())
 		return
 	}
-	respuesta.Exito(w, http.StatusCreated, creado)
+	respuesta.Exito(w, http.StatusCreated, NuevoPagoRespuesta(creado))
 }
 
 func (m *Manejador) listarPagos(w http.ResponseWriter, r *http.Request) {
@@ -98,7 +103,28 @@ func (m *Manejador) listarPagos(w http.ResponseWriter, r *http.Request) {
 		respuesta.Error(w, http.StatusInternalServerError, "Error al consultar los pagos")
 		return
 	}
-	respuesta.Exito(w, http.StatusOK, pagos)
+	respuestas := make([]PagoRespuesta, 0, len(pagos))
+	for _, p := range pagos {
+		respuestas = append(respuestas, NuevoPagoRespuesta(p))
+	}
+	respuesta.Exito(w, http.StatusOK, respuestas)
+}
+
+func (m *Manejador) listarMisPagos(w http.ResponseWriter, r *http.Request) {
+	var usuarioID uint = 1
+	if s, ok := sesion.De(r); ok && s.UsuarioID != 0 {
+		usuarioID = s.UsuarioID
+	}
+	pagos, err := m.Servicio.ListarPagosPorUsuario(usuarioID)
+	if err != nil {
+		respuesta.Error(w, http.StatusInternalServerError, "Error al consultar los pagos")
+		return
+	}
+	respuestas := make([]PagoRespuesta, 0, len(pagos))
+	for _, p := range pagos {
+		respuestas = append(respuestas, NuevoPagoRespuesta(p))
+	}
+	respuesta.Exito(w, http.StatusOK, respuestas)
 }
 
 func (m *Manejador) verPago(w http.ResponseWriter, r *http.Request) {
@@ -108,14 +134,14 @@ func (m *Manejador) verPago(w http.ResponseWriter, r *http.Request) {
 	}
 	pago, err := m.Servicio.BuscarPago(id)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if errors.Is(err, ErrNoExiste) || errors.Is(err, gorm.ErrRecordNotFound) {
 			respuesta.Error(w, http.StatusNotFound, "Pago no encontrado")
 			return
 		}
 		respuesta.Error(w, http.StatusInternalServerError, "Error al consultar la base de datos")
 		return
 	}
-	respuesta.Exito(w, http.StatusOK, pago)
+	respuesta.Exito(w, http.StatusOK, NuevoPagoRespuesta(pago))
 }
 
 func (m *Manejador) actualizarPago(w http.ResponseWriter, r *http.Request) {
@@ -123,35 +149,22 @@ func (m *Manejador) actualizarPago(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	existente, err := m.Servicio.BuscarPago(id)
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			respuesta.Error(w, http.StatusNotFound, "Pago no encontrado")
-			return
-		}
-		respuesta.Error(w, http.StatusInternalServerError, "Error al consultar la base de datos")
-		return
-	}
-
-	var datosNuevos Pago
-	if err := json.NewDecoder(r.Body).Decode(&datosNuevos); err != nil {
+	var pedido PagoPeticion
+	if err := json.NewDecoder(r.Body).Decode(&pedido); err != nil {
 		respuesta.Error(w, http.StatusBadRequest, "El cuerpo no es un JSON válido")
 		return
 	}
-	if datosNuevos.PaqueteGemasID == 0 || datosNuevos.Monto <= 0 {
-		respuesta.Error(w, http.StatusUnprocessableEntity, "paquete_gemas_id y monto son obligatorios")
+
+	actualizado, err := m.Servicio.ActualizarPago(id, pedido)
+	if err != nil {
+		if errors.Is(err, ErrNoExiste) || errors.Is(err, gorm.ErrRecordNotFound) {
+			respuesta.Error(w, http.StatusNotFound, "Pago no encontrado")
+			return
+		}
+		respuesta.Error(w, http.StatusUnprocessableEntity, err.Error())
 		return
 	}
-
-	existente.PaqueteGemasID = datosNuevos.PaqueteGemasID
-	existente.Monto = datosNuevos.Monto
-	existente.ComprobanteURL = datosNuevos.ComprobanteURL
-
-	if err := m.Servicio.GuardarPago(&existente); err != nil {
-		respuesta.Error(w, http.StatusInternalServerError, "No se pudo actualizar el pago")
-		return
-	}
-	respuesta.Exito(w, http.StatusOK, existente)
+	respuesta.Exito(w, http.StatusOK, NuevoPagoRespuesta(actualizado))
 }
 
 func (m *Manejador) borrarPago(w http.ResponseWriter, r *http.Request) {
@@ -193,8 +206,7 @@ func (m *Manejador) listar(w http.ResponseWriter, r *http.Request) {
 		respuesta.Error(w, http.StatusInternalServerError, "Error al consultar la base de datos")
 		return
 	}
-	// Mapear lista a DTOs de respuesta
-	var respuestas []MisionRespuesta
+	respuestas := make([]MisionRespuesta, 0, len(lista))
 	for _, mis := range lista {
 		respuestas = append(respuestas, NuevaMisionRespuesta(mis))
 	}
@@ -208,7 +220,7 @@ func (m *Manejador) verUno(w http.ResponseWriter, r *http.Request) {
 	}
 	mision, err := m.Servicio.BuscarMision(id)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if errors.Is(err, ErrNoExiste) || errors.Is(err, gorm.ErrRecordNotFound) {
 			respuesta.Error(w, http.StatusNotFound, "Misión no encontrada")
 			return
 		}
@@ -230,7 +242,7 @@ func (m *Manejador) actualizar(w http.ResponseWriter, r *http.Request) {
 	}
 	actualizada, err := m.Servicio.ActualizarMision(id, pedido)
 	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
+		if errors.Is(err, ErrNoExiste) || errors.Is(err, gorm.ErrRecordNotFound) {
 			respuesta.Error(w, http.StatusNotFound, "Misión no encontrada")
 			return
 		}

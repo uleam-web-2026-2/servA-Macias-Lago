@@ -18,29 +18,59 @@ func (s *Servicio) ListarPagos(estado string) ([]Pago, error) {
 	return s.repo.ListarPagos(estado)
 }
 
-func (s *Servicio) CrearPago(pago Pago) (Pago, error) {
+func (s *Servicio) ListarPagosPorUsuario(usuarioID uint) ([]Pago, error) {
+	todos, err := s.repo.ListarPagos("")
+	if err != nil {
+		return nil, err
+	}
+	var mios []Pago
+	for _, p := range todos {
+		if p.UsuarioID == usuarioID {
+			mios = append(mios, p)
+		}
+	}
+	return mios, nil
+}
+
+func (s *Servicio) CrearPago(usuarioID uint, peticion PagoPeticion) (Pago, error) {
+	if peticion.PaqueteGemasID == 0 {
+		return Pago{}, fmt.Errorf("el paquete_gemas_id es obligatorio")
+	}
+	if peticion.Monto <= 0 {
+		return Pago{}, fmt.Errorf("el monto debe ser mayor a cero")
+	}
+	if usuarioID == 0 {
+		usuarioID = 1
+	}
+
+	pago := peticion.AEntidad()
 	pago.ID = 0
-	if pago.UsuarioID == 0 {
-		pago.UsuarioID = 1
-	}
-	if pago.Estado == "" {
-		pago.Estado = "pendiente"
-	}
-	if !estadosPagoValidos[pago.Estado] {
-		return pago, fmt.Errorf("estado de pago no permitido")
-	}
-	if pago.PaqueteGemasID == 0 {
-		return pago, fmt.Errorf("el paquete_gemas_id es obligatorio")
-	}
-	if pago.Monto <= 0 {
-		return pago, fmt.Errorf("el monto debe ser mayor a cero")
-	}
+	pago.UsuarioID = usuarioID
+	pago.Estado = "pendiente" // Paso 2.5: el servidor fija siempre el estado inicial
+
 	err := s.repo.CrearPago(&pago)
 	return pago, err
 }
 
 func (s *Servicio) BuscarPago(id uint) (Pago, error) {
 	return s.repo.BuscarPago(id)
+}
+
+func (s *Servicio) ActualizarPago(id uint, peticion PagoPeticion) (Pago, error) {
+	existente, err := s.repo.BuscarPago(id)
+	if err != nil {
+		return Pago{}, err
+	}
+	if peticion.PaqueteGemasID == 0 || peticion.Monto <= 0 {
+		return Pago{}, fmt.Errorf("paquete_gemas_id y monto son obligatorios")
+	}
+	// Paso 2.5: se mantiene el estado y usuario_id de la fila guardada
+	existente.PaqueteGemasID = peticion.PaqueteGemasID
+	existente.Monto = peticion.Monto
+	existente.ComprobanteURL = peticion.ComprobanteURL
+
+	err = s.repo.GuardarPago(&existente)
+	return existente, err
 }
 
 func (s *Servicio) GuardarPago(pago *Pago) error {
@@ -87,7 +117,7 @@ func (s *Servicio) CrearMision(peticion MisionPeticion) (Mision, error) {
 	mision := peticion.AEntidad()
 	mision.ID = 0
 	mision.UsuarioID = 1
-	mision.Estado = "pendiente" // El servidor fija siempre el estado inicial
+	mision.Estado = "pendiente"
 
 	err := s.repo.CrearMision(&mision)
 	return mision, err

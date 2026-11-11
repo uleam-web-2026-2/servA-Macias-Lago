@@ -17,7 +17,7 @@ type Usuario struct {
 	Misiones []Mision `json:"Misiones"` // Relación 1 a N
 }
 
-// Mision representa la entidad con estados del lado de los MUCHOS (sin etiquetas json por regla del taller)
+// Mision representa la entidad secundaria sin etiquetas json
 type Mision struct {
 	gorm.Model
 	Titulo     string
@@ -42,23 +42,23 @@ type PaqueteGemas struct {
 	CantidadGemas int     `gorm:"not null" json:"cantidad_gemas"`
 }
 
-// Pago es la entidad con máquina de estados de la Sección 5 de la Ficha
+// Pago es la entidad principal con máquina de estados (SIN etiquetas json ni json:"-")
 type Pago struct {
-	ID             uint         `gorm:"primaryKey" json:"id"`
-	UsuarioID      uint         `gorm:"not null" json:"usuario_id"`
-	PaqueteGemasID uint         `gorm:"not null" json:"paquete_gemas_id"`
-	Monto          float64      `gorm:"type:decimal(10,2);not null" json:"monto"`
-	Estado         string       `gorm:"type:varchar(30);not null;default:'pendiente'" json:"estado"` // pendiente | pago_por_verificar | completado | rechazado
-	ComprobanteURL *string      `gorm:"type:text" json:"comprobante_url,omitempty"`
-	FechaCreacion  time.Time    `gorm:"autoCreateTime" json:"fecha_creacion"`
-	Usuario        Usuario      `gorm:"foreignKey:UsuarioID" json:"-"`
-	PaqueteGemas   PaqueteGemas `gorm:"foreignKey:PaqueteGemasID" json:"-"`
+	ID             uint         `gorm:"primaryKey"`
+	UsuarioID      uint         `gorm:"not null"`
+	PaqueteGemasID uint         `gorm:"not null"`
+	Monto          float64      `gorm:"type:decimal(10,2);not null;check:monto > 0"`
+	Estado         string       `gorm:"type:varchar(30);not null;default:'pendiente'"`
+	ComprobanteURL *string      `gorm:"type:text"`
+	FechaCreacion  time.Time    `gorm:"autoCreateTime"`
+	Usuario        Usuario      `gorm:"foreignKey:UsuarioID"`
+	PaqueteGemas   PaqueteGemas `gorm:"foreignKey:PaqueteGemasID"`
 }
 
 type Factura struct {
 	ID             uint      `gorm:"primaryKey" json:"id"`
 	PagoID         uint      `gorm:"uniqueIndex;not null" json:"pago_id"`
-	Identificacion string    `gorm:"type:varchar(20);not null" json:"identificacion"`
+	Identificacion string    `gorm:"type:varchar(20);not null;check:identificacion <> ''" json:"identificacion"`
 	RazonSocial    string    `gorm:"type:varchar(150);not null" json:"razon_social"`
 	FechaEmision   time.Time `gorm:"autoCreateTime" json:"fecha_emision"`
 	Pago           Pago      `gorm:"foreignKey:PagoID" json:"-"`
@@ -73,7 +73,6 @@ type ConsumoGemas struct {
 	Usuario       Usuario   `gorm:"foreignKey:UsuarioID" json:"-"`
 }
 
-// Estados válidos de Pago según la Sección 5 de la Ficha
 var estadosPagoValidos = map[string]bool{
 	"pendiente":          true,
 	"pago_por_verificar": true,

@@ -1,0 +1,17 @@
+.
+..
+.dockerignore
+.env
+.env.example
+.git
+.github
+.gitignore
+Dockerfile
+README.md
+docs
+go.mod
+go.sum
+internal
+main.go
+redocly.yaml
+sqlc.yaml

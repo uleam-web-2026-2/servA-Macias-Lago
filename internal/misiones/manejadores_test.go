@@ -1,6 +1,7 @@
 package misiones
 
 import (
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -56,5 +57,46 @@ func TestVerUnoConIDQueNoEsNumeroResponde400(t *testing.T) {
 
 	if grabadora.Code != http.StatusBadRequest {
 		t.Fatalf("se esperaba 400 y llegó %d", grabadora.Code)
+	}
+}
+
+// repoFalsoPago simula la base en memoria para probar el rollback de la transacción (Fase 6).
+type repoFalsoPago struct {
+	*AlmacenGorm
+	pago     Pago
+	facturas int
+}
+
+func (f *repoFalsoPago) BuscarPago(id uint) (Pago, error) {
+	if f.pago.ID != id {
+		return Pago{}, ErrNoExiste
+	}
+	return f.pago, nil
+}
+
+func (f *repoFalsoPago) GuardarPagoYFactura(p *Pago, fac *Factura) error {
+	if fac.Identificacion == "" {
+		return errors.New("error forzado: identificacion vacia rechazada por CHECK")
+	}
+	f.pago = *p
+	f.facturas++
+	return nil
+}
+
+func TestTransaccionErrorForzadoDeshaceCambioDeEstado(t *testing.T) {
+	falso := &repoFalsoPago{
+		pago: Pago{ID: 1, UsuarioID: 1, PaqueteGemasID: 1, Monto: 4.99, Estado: "pago_por_verificar"},
+	}
+	svc := NuevoServicio(falso)
+
+	_, err := svc.ConfirmarPagoYEmitirFactura(1, "", "Cliente Prueba")
+	if err == nil {
+		t.Fatal("se esperaba error al forzar identificacion vacia, pero paso sin error")
+	}
+	if falso.pago.Estado != "pago_por_verificar" {
+		t.Fatalf("el fallo a mitad de camino no deshizo el cambio: estado quedo en %s", falso.pago.Estado)
+	}
+	if falso.facturas != 0 {
+		t.Fatalf("se esperaban 0 facturas y quedaron %d", falso.facturas)
 	}
 }

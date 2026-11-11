@@ -141,3 +141,24 @@ func (s *Servicio) ActualizarMision(id uint, peticion MisionPeticion) (Mision, e
 func (s *Servicio) BorrarMision(id uint) (int64, error) {
 	return s.repo.BorrarMision(id)
 }
+
+// ConfirmarPagoYEmitirFactura cambia el estado del pago a completado y emite su factura de forma atómica (Fase 6).
+func (s *Servicio) ConfirmarPagoYEmitirFactura(id uint, identificacion, razonSocial string) (Pago, error) {
+	pago, err := s.repo.BuscarPago(id)
+	if err != nil {
+		return Pago{}, err
+	}
+	if err := ValidarCambioEstado(pago.Estado, "completado"); err != nil {
+		return Pago{}, err
+	}
+	pago.Estado = "completado"
+	factura := Factura{
+		PagoID:         id,
+		Identificacion: identificacion,
+		RazonSocial:    razonSocial,
+	}
+	if err := s.repo.GuardarPagoYFactura(&pago, &factura); err != nil {
+		return Pago{}, err
+	}
+	return pago, nil
+}

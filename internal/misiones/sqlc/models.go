@@ -6,7 +6,16 @@ package sqlc
 
 import (
 	"database/sql"
+	"time"
 )
+
+type Factura struct {
+	ID             int64
+	PagoID         int64
+	Identificacion string
+	RazonSocial    string
+	FechaEmision   time.Time
+}
 
 type Mision struct {
 	ID         int64
@@ -18,4 +27,14 @@ type Mision struct {
 	Dificultad string
 	Estado     string
 	UsuarioID  int64
+}
+
+type Pago struct {
+	ID             int64
+	UsuarioID      int64
+	PaqueteGemasID int64
+	Monto          float64
+	Estado         string
+	ComprobanteUrl sql.NullString
+	FechaCreacion  time.Time
 }

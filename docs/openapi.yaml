@@ -74,29 +74,6 @@ paths:
         "401": { $ref: "#/components/responses/Error401" }
         "404": { $ref: "#/components/responses/Error404" }
         "422": { $ref: "#/components/responses/Error422" }
-    patch:
-      operationId: cambiarEstadoMision
-      summary: Cambia el estado de una misión
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [estado]
-              properties:
-                estado: { type: string, enum: [pendiente, en_progreso, completada, fallida] }
-      responses:
-        "200":
-          description: Misión con su nuevo estado
-          content:
-            application/json:
-              schema: { $ref: "#/components/schemas/MisionRespuesta" }
-        "400": { $ref: "#/components/responses/Error400" }
-        "401": { $ref: "#/components/responses/Error401" }
-        "403": { $ref: "#/components/responses/Error403" }
-        "404": { $ref: "#/components/responses/Error404" }
-        "422": { $ref: "#/components/responses/Error422" }
     delete:
       operationId: borrarMision
       summary: Borra una misión
@@ -136,7 +113,7 @@ paths:
         "401": { $ref: "#/components/responses/Error401" }
     post:
       operationId: crearPago
-      summary: Registra un pago de paquete de gemas
+      summary: Registra un pago de paquete de gemas para el usuario de la sesión
       requestBody:
         required: true
         content:
@@ -151,6 +128,19 @@ paths:
         "400": { $ref: "#/components/responses/Error400" }
         "401": { $ref: "#/components/responses/Error401" }
         "422": { $ref: "#/components/responses/Error422" }
+  /pagos/mios:
+    get:
+      operationId: listarMisPagos
+      summary: Lista los pagos realizados por el usuario autenticado en el token
+      responses:
+        "200":
+          description: Los pagos del usuario autenticado
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Pago" }
+        "401": { $ref: "#/components/responses/Error401" }
   /pagos/{id}:
     parameters:
       - name: id
@@ -194,7 +184,7 @@ paths:
         "422": { $ref: "#/components/responses/Error422" }
     put:
       operationId: modificarPago
-      summary: Modifica los datos de un pago (no su estado)
+      summary: Modifica los datos de un pago (no su estado ni su usuario)
       requestBody:
         required: true
         content:
@@ -322,7 +312,7 @@ components:
       required: [id, usuario_id, paquete_gemas_id, monto, estado, fecha_creacion]
       properties:
         id: { type: integer, readOnly: true }
-        usuario_id: { type: integer }
+        usuario_id: { type: integer, readOnly: true }
         paquete_gemas_id: { type: integer }
         monto: { type: number }
         estado: { $ref: "#/components/schemas/EstadoPago" }
@@ -330,9 +320,8 @@ components:
         fecha_creacion: { type: string, format: date-time }
     PagoNuevo:
       type: object
-      required: [usuario_id, paquete_gemas_id, monto]
+      required: [paquete_gemas_id, monto]
       properties:
-        usuario_id: { type: integer }
         paquete_gemas_id: { type: integer }
         monto: { type: number }
         comprobante_url: { type: string }

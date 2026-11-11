@@ -1,0 +1,22 @@
+?   	github.com/uleam-web-2026-2/servA-Macias-Lago	[no test files]
+?   	github.com/uleam-web-2026-2/servA-Macias-Lago/internal/config	[no test files]
+?   	github.com/uleam-web-2026-2/servA-Macias-Lago/internal/middleware	[no test files]
+=== RUN   TestCrear
+=== RUN   TestCrear/JSON_roto_responde_400
+=== RUN   TestCrear/titulo_vacio_responde_422
+=== RUN   TestCrear/dificultad_no_permitida_responde_422_(Regla_propia)
+--- PASS: TestCrear (0.00s)
+    --- PASS: TestCrear/JSON_roto_responde_400 (0.00s)
+    --- PASS: TestCrear/titulo_vacio_responde_422 (0.00s)
+    --- PASS: TestCrear/dificultad_no_permitida_responde_422_(Regla_propia) (0.00s)
+=== RUN   TestVerUnoConIDQueNoEsNumeroResponde400
+--- PASS: TestVerUnoConIDQueNoEsNumeroResponde400 (0.00s)
+=== RUN   TestTransaccionErrorForzadoDeshaceCambioDeEstado
+--- PASS: TestTransaccionErrorForzadoDeshaceCambioDeEstado (0.00s)
+=== RUN   TestSinTokenLasRutasProtegidasResponden401
+--- PASS: TestSinTokenLasRutasProtegidasResponden401 (0.00s)
+PASS
+ok  	github.com/uleam-web-2026-2/servA-Macias-Lago/internal/misiones	(cached)
+?   	github.com/uleam-web-2026-2/servA-Macias-Lago/internal/misiones/sqlc	[no test files]
+?   	github.com/uleam-web-2026-2/servA-Macias-Lago/internal/respuesta	[no test files]
+?   	github.com/uleam-web-2026-2/servA-Macias-Lago/internal/sesion	[no test files]

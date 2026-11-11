@@ -1,0 +1,10 @@
+?   	github.com/uleam-web-2026-2/servA-Macias-Lago	[no test files]
+?   	github.com/uleam-web-2026-2/servA-Macias-Lago/internal/config	[no test files]
+?   	github.com/uleam-web-2026-2/servA-Macias-Lago/internal/middleware	[no test files]
+=== RUN   TestTransaccionErrorForzadoDeshaceCambioDeEstado
+--- PASS: TestTransaccionErrorForzadoDeshaceCambioDeEstado (0.00s)
+PASS
+ok  	github.com/uleam-web-2026-2/servA-Macias-Lago/internal/misiones	3.301s
+?   	github.com/uleam-web-2026-2/servA-Macias-Lago/internal/misiones/sqlc	[no test files]
+?   	github.com/uleam-web-2026-2/servA-Macias-Lago/internal/respuesta	[no test files]
+?   	github.com/uleam-web-2026-2/servA-Macias-Lago/internal/sesion	[no test files]

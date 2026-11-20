@@ -3,10 +3,12 @@ package main
 import (
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	"github.com/go-chi/httprate"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
@@ -44,20 +46,21 @@ func main() {
 	}
 
 	r := chi.NewRouter()
-	
+
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins: []string{"http://localhost:5173"},
 		AllowedMethods: []string{"GET", "POST", "PUT", "PATCH", "DELETE"},
 		AllowedHeaders: []string{"Authorization", "Content-Type"},
 		MaxAge:         300,
 	}))
-
+	r.Use(middleware.ClientIPFromRemoteAddr) // anota la IP del cliente
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
 	tokens := sesion.NuevosTokens(cfg.ClaveFirma)
 	login := &sesion.Manejador{DB: db, Tokens: tokens}
-	r.Post("/login", login.Login)
+	// Pública, pero con límite: 5 intentos por minuto por IP. El sexto, 429.
+	r.With(httprate.LimitBy(5, time.Minute, porIP)).Post("/login", login.Login)
 
 	conexion, err := db.DB()
 	if err != nil {
@@ -78,4 +81,12 @@ func main() {
 
 	log.Println("escuchando en el puerto", cfg.Puerto)
 	log.Fatal(servidor.ListenAndServe())
+}
+
+// porIP dice a quién se le cuenta cada petición: a la IP que anotó
+// ClientIPFromRemoteAddr, la de la conexión. No se lee ninguna cabecera
+// que el cliente pueda escribir.
+func porIP(r *http.Request) (string, error) {
+	ip := middleware.GetClientIP(r.Context())
+	return httprate.CanonicalizeIP(ip), nil
 }

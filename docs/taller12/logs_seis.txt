@@ -1,0 +1,13 @@
+2026/11/19 22:19:13 escuchando en el puerto 8080
+2026/11/19 22:23:52 "POST http://localhost:8080/pagos HTTP/1.1" from ::1 - 401 35B in 3.7686ms
+2026/11/19 22:23:57 "GET http://localhost:8080/pagos HTTP/1.1" from ::1 - 401 58B in 0s
+2026/11/19 22:33:51 "POST http://localhost:8080/login HTTP/1.1" from ::1 - 200 196B in 133.2954ms
+2026/11/19 22:36:05 "POST http://localhost:8080/pagos HTTP/1.1" from ::1 - 201 131B in 17.2431ms
+2026/11/19 22:36:10 "GET http://localhost:8080/pagos HTTP/1.1" from ::1 - 200 404B in 5.4011ms
+2026/11/19 22:36:16 "PATCH http://localhost:8080/pagos/2 HTTP/1.1" from ::1 - 403 47B in 0s
+2026/11/19 22:38:17 "POST http://localhost:8080/login HTTP/1.1" from ::1 - 400 41B in 0s
+2026/11/19 22:40:03 "POST http://localhost:8080/login HTTP/1.1" from ::1 - 200 194B in 87.1612ms
+2026/11/19 22:40:46 "PATCH http://localhost:8080/pagos/2 HTTP/1.1" from ::1 - 401 35B in 0s
+2026/11/19 22:41:24 "PATCH http://localhost:8080/pagos/2 HTTP/1.1" from ::1 - 422 47B in 3.1792ms
+2026/11/19 22:41:41 "PATCH http://localhost:8080/pagos/1 HTTP/1.1" from ::1 - 422 47B in 2.5675ms
+2026/11/19 22:44:07 "PATCH http://localhost:8080/pagos/3 HTTP/1.1" from ::1 - 200 140B in 12.5206ms

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"net/http"
 	"time"
@@ -18,6 +19,9 @@ import (
 )
 
 func main() {
+	migrar := flag.Bool("migrar", false, "ejecuta migraciones y semillas")
+	flag.Parse()
+
 	cfg, err := config.Cargar()
 	if err != nil {
 		log.Fatal("configuración: ", err)
@@ -28,21 +32,25 @@ func main() {
 		log.Fatal("no se pudo conectar: ", err)
 	}
 
-	if err := db.AutoMigrate(
-		&misiones.Usuario{},
-		&misiones.Mision{},
-		&misiones.PaqueteGemas{},
-		&misiones.Pago{},
-		&misiones.Factura{},
-		&misiones.ConsumoGemas{},
-		&sesion.Usuario{},
-	); err != nil {
-		log.Fatal("no se pudo migrar: ", err)
-	}
+	if *migrar {
+		if err := db.AutoMigrate(
+			&misiones.Usuario{},
+			&misiones.Mision{},
+			&misiones.PaqueteGemas{},
+			&misiones.Pago{},
+			&misiones.Factura{},
+			&misiones.ConsumoGemas{},
+			&sesion.Usuario{},
+		); err != nil {
+			log.Fatal("no se pudo migrar: ", err)
+		}
 
-	misiones.Sembrar(db)
-	if err := sesion.Sembrar(db); err != nil {
-		log.Fatal("no se pudieron sembrar los usuarios de sesión: ", err)
+		misiones.Sembrar(db)
+		if err := sesion.Sembrar(db); err != nil {
+			log.Fatal("no se pudieron sembrar los usuarios de sesión: ", err)
+		}
+		log.Println("migraciones y semillas completadas")
+		return
 	}
 
 	r := chi.NewRouter()

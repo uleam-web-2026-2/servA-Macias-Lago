@@ -72,3 +72,16 @@ Elegimos un tope de **5 intentos por minuto por IP** (`httprate.LimitBy(5, time.
 
 ### D4 · Detrás de un proxy
 `middleware.ClientIPFromRemoteAddr` obtiene la IP directamente de `r.RemoteAddr`, es decir, la dirección real de la conexión TCP que llegó al servidor Go. Si la API queda detrás de un proxy inverso (como Nginx, Cloudflare o Render), todas las conexiones TCP llegarían con la IP del proxy y el límite de 5 intentos/minuto bloquearía a todos los usuarios a la vez. Sin embargo, no se puede confiar sin más en cabeceras como `X-Forwarded-For` porque cualquier cliente puede escribir o falsificar esa cabecera en su petición y saltarse el límite cambiando el valor en cada intento; solo debe leerse si se valida que la petición proviene de un proxy de confianza.
+## Semana 12 · reto: mínimo privilegio en la base
+### D5 · Con qué usuario se conecta la API
+La API se conecta con el usuario **`api_doublelevel`** (`NOSUPERUSER`, `NOCREATEDB`, `NOCREATEROLE`, sin propiedad sobre ninguna tabla). Sus permisos por tabla son:
+- `cuentas`, `paquete_gemas` y `usuarios`: solo `SELECT`, porque en ejecución normal la API solo consulta credenciales para el login y el catálogo de paquetes.
+- `pagos` y `misions`: `SELECT, INSERT, UPDATE, DELETE` (más `USAGE, SELECT` sobre `pagos_id_seq` y `misions_id_seq`) porque los endpoints exponen el CRUD completo y cambios de estado.
+- `facturas`: `SELECT, INSERT` (más `USAGE, SELECT` sobre `facturas_id_seq`) porque las facturas solo se emiten y consultan, nunca se borran.
+Al intentar ejecutar `DROP TABLE pagos` con `api_doublelevel` (`reto_drop.txt`), PostgreSQL respondió `ERROR: must be owner of table pagos`.
+
+### D6 · Quién crea y cambia las tablas
+Las tablas las crea y modifica el usuario **`postgres`** (dueño del esquema) únicamente antes del despliegue o cuando cambia algún modelo, ejecutando el comando **`go run . -migrar`** con `DATABASE_URL` apuntando a `postgres`. Si cambiamos un modelo en Go y arrancamos la API normalmente (`go run .`) con `api_doublelevel` sin migrar antes, la API no ejecuta `AutoMigrate` y al consultar o escribir la columna nueva PostgreSQL devuelve un error de columna inexistente en lugar de alterar la estructura.
+
+### D7 · Lo que esto no frena
+Si quedara una inyección SQL en la API, un atacante usando `api_doublelevel` **ya no** podría borrar tablas (`DROP TABLE`), alterar esquemas (`ALTER TABLE`), crear superusuarios ni leer otras bases del servidor. Sin embargo, **todavía podría** leer datos sensibles de las tablas donde tiene `SELECT` (como los hashes en `cuentas` o los pagos de otros usuarios) y modificar o borrar filas en `pagos` y `misions`, por lo que las consultas parametrizadas siguen siendo indispensables.

@@ -14,4 +14,4 @@ Búsqueda: `git grep -n -E -f docs/taller12/patrones.txt -- "*.go" ":(exclude)*_
 | `internal/sesion/guardia.go:60` (`"solo el rol "+rol+" puede hacer esto"`) y `main.go:64` (`Addr: ":" + cfg.Puerto`) | No (mensaje de error y dirección del servidor) | No | — | Nada: no arman SQL. |
 | `internal/sesion/usuarios.go:41` y `67` (`Where("nombre = ?", ...).Limit(1).Find(&u)`) | Sí | Sí (`e.nombre` / `pedido.Usuario`) | Sí, con `?` en GORM | Nada: es segura, el valor viaja como parámetro. |
 
-**Resultado:** Las 21 líneas revisadas no concatenan entrada del cliente dentro de sentencias SQL con `+` ni `Sprintf`; las consultas usan parámetros (`?` en GORM o argumentos en `sqlc`), y en `inyeccion.txt` el filtro normal devolvió `200 OK` mientras `' OR 1=1 --` no trajo registros adicionales (`400 Bad Request`).
+**Resultado:** Las 21 líneas revisadas no concatenan entrada del cliente dentro de sentencias SQL con `+` ni `Sprintf`; las consultas usan parámetros (`?` en GORM o argumentos en `sqlc`), y en `inyeccion.txt` el filtro normal devolvió `200 OK` con el registro `"pendiente"` mientras `' OR 1=1 --` devolvió `200 OK` con `[]` sin traer registros adicionales.

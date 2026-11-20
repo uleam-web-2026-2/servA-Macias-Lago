@@ -1,0 +1,7 @@
+HTTP/1.1 200 OK
+Content-Type: application/json; charset=utf-8
+Vary: Origin
+Date: Fri, 20 Nov 2026 02:32:12 GMT
+Content-Length: 140
+
+{"id":3,"usuario_id":1,"paquete_gemas_id":1,"monto":4.99,"estado":"pago_por_verificar","fecha_creacion":"2026-11-19T20:09:57.802576-05:00"}

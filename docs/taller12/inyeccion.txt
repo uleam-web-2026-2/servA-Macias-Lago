@@ -1,0 +1,11 @@
+HTTP/1.1 200 OK
+Content-Type: application/json; charset=utf-8
+Date: Fri, 20 Nov 2026 01:46:48 GMT
+Content-Length: 264
+
+[{"id":1,"usuario_id":1,"paquete_gemas_id":1,"monto":4.99,"estado":"pendiente","fecha_creacion":"2026-10-29T05:33:35.489058-05:00"},{"id":3,"usuario_id":1,"paquete_gemas_id":1,"monto":4.99,"estado":"pendiente","fecha_creacion":"2026-11-19T20:09:57.802576-05:00"}]
+HTTP/1.1 400 Bad Request
+Content-Type: text/plain; charset=utf-8
+Connection: close
+
+400 Bad Request

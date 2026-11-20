@@ -1,0 +1,21 @@
+internal/misiones/manejadores.go:100:	estado := r.URL.Query().Get("estado")
+internal/misiones/manejadores.go:203:	estado := r.URL.Query().Get("estado")
+internal/misiones/repositorio.go:43:	err := a.DB.Find(&paquetes).Error
+internal/misiones/repositorio.go:51:		q = q.Where("estado = ?", estado)
+internal/misiones/repositorio.go:53:	err := q.Order("id asc").Find(&pagos).Error
+internal/misiones/repositorio.go:63:	err := a.DB.First(&p, id).Error
+internal/misiones/repositorio.go:98:		q = q.Where("estado = ?", estado)
+internal/misiones/repositorio.go:100:	err := q.Find(&lista).Error
+internal/misiones/repositorio.go:106:	err := a.DB.First(&m, id).Error
+internal/misiones/sqlc/db.go:13:	ExecContext(context.Context, string, ...interface{}) (sql.Result, error)
+internal/misiones/sqlc/db.go:15:	QueryContext(context.Context, string, ...interface{}) (*sql.Rows, error)
+internal/misiones/sqlc/db.go:16:	QueryRowContext(context.Context, string, ...interface{}) *sql.Row
+internal/misiones/sqlc/query.sql.go:20:	row := q.db.QueryRowContext(ctx, buscarPagoSqlc, id)
+internal/misiones/sqlc/query.sql.go:50:	result, err := q.db.ExecContext(ctx, guardarPagoSqlc,
+internal/misiones/sqlc/query.sql.go:76:	_, err := q.db.ExecContext(ctx, crearFacturaSqlc, arg.PagoID, arg.Identificacion, arg.RazonSocial)
+internal/misiones/sqlc/query.sql.go:97:	row := q.db.QueryRowContext(ctx, buscarMisionSqlc, id)
+internal/misiones/sqlc/query.sql.go:126:	result, err := q.db.ExecContext(ctx, guardarMisionSqlc,
+internal/sesion/guardia.go:60:					"solo el rol "+rol+" puede hacer esto")
+internal/sesion/usuarios.go:41:		db.Where("nombre = ?", e.nombre).Limit(1).Find(&u)
+internal/sesion/usuarios.go:67:	err := m.DB.Where("nombre = ?", pedido.Usuario).Limit(1).Find(&u).Error
+main.go:64:		Addr:         ":" + cfg.Puerto,

@@ -1,0 +1,8 @@
+=== RUN   TestWebSocketSinTokenRechaza401
+--- PASS: TestWebSocketSinTokenRechaza401 (0.01s)
+=== RUN   TestWebSocketOtroOrigenRechaza403
+--- PASS: TestWebSocketOtroOrigenRechaza403 (0.00s)
+=== RUN   TestWebSocketAvisoLlegaSoloAlDueno
+--- PASS: TestWebSocketAvisoLlegaSoloAlDueno (0.60s)
+PASS
+ok  	github.com/uleam-web-2026-2/servA-Macias-Lago/internal/transporte	2.890s

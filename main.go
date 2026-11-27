@@ -16,7 +16,12 @@ import (
 	"github.com/uleam-web-2026-2/servA-Macias-Lago/internal/config"
 	"github.com/uleam-web-2026-2/servA-Macias-Lago/internal/misiones"
 	"github.com/uleam-web-2026-2/servA-Macias-Lago/internal/sesion"
+	"github.com/uleam-web-2026-2/servA-Macias-Lago/internal/transporte"
 )
+
+// origenFront es el único front que puede leer las respuestas (CORS) y
+// abrir el WebSocket. Se escribe una vez, igual que en la barra del navegador.
+const origenFront = "http://localhost:5173"
 
 func main() {
 	migrar := flag.Bool("migrar", false, "ejecuta migraciones y semillas")
@@ -56,7 +61,7 @@ func main() {
 	r := chi.NewRouter()
 
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins: []string{"http://localhost:5173"},
+		AllowedOrigins: []string{origenFront},
 		AllowedMethods: []string{"GET", "POST", "PUT", "PATCH", "DELETE"},
 		AllowedHeaders: []string{"Authorization", "Content-Type"},
 		MaxAge:         300,
@@ -78,7 +83,13 @@ func main() {
 	repoGorm := misiones.NuevoAlmacenGorm(db)
 	repo := misiones.NuevoMisionesSqlc(repoGorm, conexion)
 	servicio := misiones.NuevoServicio(repo)
+
+	// Los avisos: el servicio avisa al dueño cuando cambia su pago.
+	avisos := transporte.NuevosAvisos(tokens, origenFront)
+	servicio.AvisarCon(avisos)
+
 	(&misiones.Manejador{Servicio: servicio}).Rutas(r, tokens)
+	r.Get("/ws", avisos.Conectar) // fuera del guardia: el token va en la dirección
 
 	servidor := &http.Server{
 		Addr:         ":" + cfg.Puerto,

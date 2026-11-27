@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Prueba WebSocket - DoubleLevel</title>
+  <style>
+    body { font-family: sans-serif; max-width: 680px; margin: 24px auto; padding: 0 16px; }
+    label { display: block; margin-top: 10px; font-weight: bold; }
+    input, button { padding: 8px; margin-top: 4px; width: 100%; box-sizing: border-box; }
+    button { cursor: pointer; margin-top: 12px; }
+    #estado { margin-top: 14px; font-weight: bold; }
+    #avisos { margin-top: 14px; padding: 10px; border: 1px solid #ccc; min-height: 120px; background: #fafafa; }
+  </style>
+</head>
+<body>
+  <h2>Avisos en tiempo real (/ws)</h2>
+
+  <label>URL de la API</label>
+  <input id="apiUrl" value="http://localhost:8080" />
+
+  <label>Usuario</label>
+  <input id="usuario" placeholder="ana o eva" />
+
+  <label>Clave</label>
+  <input id="clave" type="password" placeholder="ana-2026 o eva-2026" />
+
+  <button id="btnConectar" type="button">Iniciar sesión y conectar WebSocket</button>
+
+  <div id="estado">Desconectado</div>
+  <div id="avisos"></div>
+
+  <script>
+    let socket = null;
+
+    document.getElementById("btnConectar").addEventListener("click", async () => {
+      const apiUrl = document.getElementById("apiUrl").value.trim().replace(/\/+$/, "");
+      const usuario = document.getElementById("usuario").value.trim();
+      const clave = document.getElementById("clave").value;
+      const estadoEl = document.getElementById("estado");
+      const avisosEl = document.getElementById("avisos");
+
+      avisosEl.innerHTML = "";
+      estadoEl.textContent = "Iniciando sesión...";
+
+      const res = await fetch(`${apiUrl}/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ usuario, clave })
+      });
+
+      if (!res.ok) {
+        estadoEl.textContent = `Error en login: ${res.status}`;
+        return;
+      }
+
+      const data = await res.json();
+      const wsBase = apiUrl.replace(/^http:\/\//i, "ws://").replace(/^https:\/\//i, "wss://");
+      const wsUrl = `${wsBase}/ws?token=${encodeURIComponent(data.token)}`;
+
+      if (socket) {
+        socket.close();
+      }
+
+      socket = new WebSocket(wsUrl);
+
+      socket.onopen = () => {
+        estadoEl.textContent = `Conectado como ${usuario}`;
+      };
+
+      socket.onmessage = (ev) => {
+        const linea = document.createElement("div");
+        const hora = new Date().toLocaleTimeString();
+        linea.textContent = `${hora} — ${ev.data}`;
+        avisosEl.appendChild(linea);
+      };
+
+      socket.onclose = (ev) => {
+        estadoEl.textContent = `Conexión cerrada, código ${ev.code}`;
+      };
+
+      socket.onerror = () => {
+        estadoEl.textContent = "Error en WebSocket (revisa consola F12)";
+      };
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+ go run .
+2026/11/26 23:21:19 escuchando en el puerto 8080
+2026/11/26 23:25:11 "POST http://localhost:8080/login HTTP/1.1" from ::1 - 200 196B in 124.5517ms
+2026/11/26 23:25:28 "POST http://localhost:8080/login HTTP/1.1" from ::1 - 200 196B in 74.1568ms
+2026/11/26 23:25:59 "POST http://localhost:8080/login HTTP/1.1" from ::1 - 200 196B in 103.6966ms
+2026/11/26 23:28:44 "POST http://localhost:8080/pagos HTTP/1.1" from ::1 - 201 132B in 68.604ms
+2026/11/26 23:28:59 "POST http://localhost:8080/login HTTP/1.1" from ::1 - 200 194B in 141.2024ms
+2026/11/26 23:29:43 "PATCH http://localhost:8080/pagos/5 HTTP/1.1" from ::1 - 200 139B in 7.8303ms
+2026/11/26 23:32:29 "GET http://localhost:8080/ws?token=BORRADO HTTP/1.1" from ::1 - 101 0B in 7m18.4810804s
+2026/11/26 23:32:30 "GET http://localhost:8080/ws?token=BORRADO HTTP/1.1" from ::1 - 101 0B in 7m2.0624692s

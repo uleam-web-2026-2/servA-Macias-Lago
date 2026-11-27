@@ -1,13 +1,21 @@
 package misiones
 
-import "fmt"
+import (
+	"fmt"
+	"strconv"
+)
 
 type Servicio struct {
-	repo Repositorio
+	repo   Repositorio
+	avisos Avisador
 }
 
 func NuevoServicio(repo Repositorio) *Servicio {
 	return &Servicio{repo: repo}
+}
+
+func (s *Servicio) AvisarCon(a Avisador) {
+	s.avisos = a
 }
 
 func (s *Servicio) ListarPaquetes() ([]PaqueteGemas, error) {
@@ -93,8 +101,17 @@ func (s *Servicio) CambiarEstadoPago(id uint, nuevoEstado string) (Pago, error) 
 		return Pago{}, err
 	}
 	pago.Estado = nuevoEstado
-	err = s.repo.GuardarPago(&pago)
-	return pago, err
+	if err := s.repo.GuardarPago(&pago); err != nil {
+		return Pago{}, err
+	}
+	if s.avisos != nil {
+		s.avisos.Enviar(strconv.Itoa(int(pago.UsuarioID)), Aviso{
+			Tipo:   "estado_cambiado",
+			ID:     pago.ID,
+			Estado: pago.Estado,
+		})
+	}
+	return pago, nil
 }
 
 // Metodos para Misiones

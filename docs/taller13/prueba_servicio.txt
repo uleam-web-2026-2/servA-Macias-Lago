@@ -1,0 +1,6 @@
+=== RUN   TestCambiarEstadoAvisaAlDueno
+--- PASS: TestCambiarEstadoAvisaAlDueno (0.00s)
+=== RUN   TestTransicionProhibidaNoAvisa
+--- PASS: TestTransicionProhibidaNoAvisa (0.00s)
+PASS
+ok  	github.com/uleam-web-2026-2/servA-Macias-Lago/internal/misiones	1.396s

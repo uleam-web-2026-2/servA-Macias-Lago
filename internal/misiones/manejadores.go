@@ -83,12 +83,13 @@ func (m *Manejador) crearPago(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var usuarioID uint = 1
-	if s, ok := sesion.De(r); ok && s.UsuarioID != 0 {
-		usuarioID = s.UsuarioID
+	s, ok := sesion.De(r)
+	if !ok || s.UsuarioID == 0 {
+		respuesta.Error(w, http.StatusUnauthorized, "sesión inválida")
+		return
 	}
 
-	creado, err := m.Servicio.CrearPago(usuarioID, pedido)
+	creado, err := m.Servicio.CrearPago(s.UsuarioID, pedido)
 	if err != nil {
 		respuesta.Error(w, http.StatusUnprocessableEntity, err.Error())
 		return

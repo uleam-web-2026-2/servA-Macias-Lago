@@ -29,6 +29,7 @@ func (Usuario) TableName() string {
 func Sembrar(db *gorm.DB) error {
 	ejemplos := []struct{ nombre, rol, clave string }{
 		{"ana", RolJugador, "ana-2026"},
+		{"eva", RolJugador, "eva-2026"},
 		{"luis", RolAdmin, "luis-2026"},
 	}
 	for _, e := range ejemplos {

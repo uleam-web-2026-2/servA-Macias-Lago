@@ -56,8 +56,17 @@ func (s *Servicio) CrearPago(usuarioID uint, peticion PagoPeticion) (Pago, error
 	pago.UsuarioID = usuarioID
 	pago.Estado = "pendiente" // Paso 2.5: el servidor fija siempre el estado inicial
 
-	err := s.repo.CrearPago(&pago)
-	return pago, err
+	if err := s.repo.CrearPago(&pago); err != nil {
+		return Pago{}, err
+	}
+	if s.avisos != nil {
+		s.avisos.EnviarAlNegocio(Aviso{
+			Tipo:   "pago_nuevo",
+			ID:     pago.ID,
+			Estado: pago.Estado,
+		})
+	}
+	return pago, nil
 }
 
 func (s *Servicio) BuscarPago(id uint) (Pago, error) {

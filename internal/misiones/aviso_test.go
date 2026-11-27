@@ -14,6 +14,7 @@ func (a *avisadorFalso) Enviar(quien string, av Aviso) {
 	a.quien = append(a.quien, quien)
 	a.avisos = append(a.avisos, av)
 }
+func (a *avisadorFalso) EnviarAlNegocio(av Aviso) {}
 
 func TestCambiarEstadoAvisaAlDueno(t *testing.T) {
 	f := &repoFalso{pago: Pago{ID: 7, UsuarioID: 1, Monto: 4.99, Estado: "pendiente"}}

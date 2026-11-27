@@ -156,3 +156,62 @@ func TestWebSocketAvisoLlegaSoloAlDueno(t *testing.T) {
 	case <-evaCtx.Done():
 	}
 }
+func TestRetoAvisaALosAdmins(t *testing.T) {
+	srv, tokens, avisos := nuevoServidorPrueba(t)
+
+	tokAdmin1, err := tokens.Emitir(sesion.Usuario{ID: 2, Nombre: "luis", Rol: sesion.RolAdmin})
+	if err != nil {
+		t.Fatal(err)
+	}
+	tokAdmin2, err := tokens.Emitir(sesion.Usuario{ID: 3, Nombre: "admin2", Rol: sesion.RolAdmin})
+	if err != nil {
+		t.Fatal(err)
+	}
+	tokJugador, err := tokens.Emitir(sesion.Usuario{ID: 1, Nombre: "ana", Rol: sesion.RolJugador})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	conectar := func(tok string) *websocket.Conn {
+		c, _, err := websocket.Dial(ctx, wsURL(srv, tok), &websocket.DialOptions{
+			HTTPHeader: http.Header{"Origin": []string{origenPrueba}},
+		})
+		if err != nil {
+			t.Fatalf("no conectó: %v", err)
+		}
+		t.Cleanup(func() { c.CloseNow() })
+		return c
+	}
+
+	cAdmin1 := conectar(tokAdmin1)
+	cAdmin2 := conectar(tokAdmin2)
+	cJugador := conectar(tokJugador)
+
+	time.Sleep(100 * time.Millisecond)
+
+	avisos.EnviarAlNegocio(misiones.Aviso{
+		Tipo:   "pago_nuevo",
+		ID:     15,
+		Estado: "pendiente",
+	})
+
+	for i, c := range []*websocket.Conn{cAdmin1, cAdmin2} {
+		var av misiones.Aviso
+		if err := wsjson.Read(ctx, c, &av); err != nil {
+			t.Fatalf("admin %d no recibió el aviso: %v", i+1, err)
+		}
+		if av.Tipo != "pago_nuevo" || av.ID != 15 {
+			t.Fatalf("aviso inesperado en admin %d: %+v", i+1, av)
+		}
+	}
+
+	jugCtx, cancelJug := context.WithTimeout(ctx, 500*time.Millisecond)
+	defer cancelJug()
+	var ajeno misiones.Aviso
+	if err := wsjson.Read(jugCtx, cJugador, &ajeno); err == nil {
+		t.Fatalf("el jugador no debía recibir el aviso, pero recibió: %+v", ajeno)
+	}
+}

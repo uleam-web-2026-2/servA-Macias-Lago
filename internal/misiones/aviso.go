@@ -8,4 +8,5 @@ type Aviso struct {
 
 type Avisador interface {
 	Enviar(quien string, av Aviso)
+	EnviarAlNegocio(av Aviso)
 }

@@ -1,0 +1,4 @@
+=== RUN   TestRetoAvisaALosAdmins
+--- PASS: TestRetoAvisaALosAdmins (0.61s)
+PASS
+ok  	github.com/uleam-web-2026-2/servA-Macias-Lago/internal/transporte	2.825s

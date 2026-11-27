@@ -17,6 +17,7 @@ import (
 type Avisos struct {
 	mu      sync.Mutex
 	canales map[string]map[chan misiones.Aviso]struct{}
+	porRol  map[string]map[chan misiones.Aviso]struct{}
 	tokens  *sesion.Tokens
 	origen  string
 }
@@ -24,18 +25,24 @@ type Avisos struct {
 func NuevosAvisos(tokens *sesion.Tokens, origen string) *Avisos {
 	return &Avisos{
 		canales: make(map[string]map[chan misiones.Aviso]struct{}),
+		porRol:  make(map[string]map[chan misiones.Aviso]struct{}),
 		tokens:  tokens,
 		origen:  origen,
 	}
 }
 
-func (a *Avisos) suscribir(quien string) (chan misiones.Aviso, func()) {
+func (a *Avisos) suscribir(quien, rol string) (chan misiones.Aviso, func()) {
 	c := make(chan misiones.Aviso, 8)
 	a.mu.Lock()
 	if a.canales[quien] == nil {
 		a.canales[quien] = make(map[chan misiones.Aviso]struct{})
 	}
 	a.canales[quien][c] = struct{}{}
+
+	if a.porRol[rol] == nil {
+		a.porRol[rol] = make(map[chan misiones.Aviso]struct{})
+	}
+	a.porRol[rol][c] = struct{}{}
 	a.mu.Unlock()
 
 	cancelar := func() {
@@ -44,6 +51,12 @@ func (a *Avisos) suscribir(quien string) (chan misiones.Aviso, func()) {
 			delete(set, c)
 			if len(set) == 0 {
 				delete(a.canales, quien)
+			}
+		}
+		if set, ok := a.porRol[rol]; ok {
+			delete(set, c)
+			if len(set) == 0 {
+				delete(a.porRol, rol)
 			}
 		}
 		a.mu.Unlock()
@@ -58,7 +71,18 @@ func (a *Avisos) Enviar(quien string, av misiones.Aviso) {
 	for c := range a.canales[quien] {
 		select {
 		case c <- av:
-		default: // conexión lenta: se pierde este aviso
+		default:
+		}
+	}
+}
+
+func (a *Avisos) EnviarAlNegocio(av misiones.Aviso) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	for c := range a.porRol[sesion.RolAdmin] {
+		select {
+		case c <- av:
+		default:
 		}
 	}
 }
@@ -78,16 +102,14 @@ func (a *Avisos) Conectar(w http.ResponseWriter, r *http.Request) {
 		OriginPatterns: []string{a.origen},
 	})
 	if err != nil {
-		return // Accept ya respondió el error (403 si el origen no es el permitido)
+		return
 	}
 	defer conn.CloseNow()
 
 	quien := strconv.Itoa(int(s.UsuarioID))
-	c, cancelar := a.suscribir(quien)
+	c, cancelar := a.suscribir(quien, s.Rol)
 	defer cancelar()
 
-	// Se usa context.Background() y no r.Context() para que timeouts de petición
-	// no cierren la conexión WebSocket abierta.
 	ctx := conn.CloseRead(context.Background())
 
 	for {
